@@ -1,0 +1,551 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+<head>
+   <title>Rayenz's Custom Dailies</title>
+   <style>
+      /* Collapsible Styling */
+      .collapsible {
+         background-color: #777;
+         color: white;
+         cursor: pointer;
+         padding: 18px;
+         width: 100%;
+         border: none;
+         text-align: left;
+         outline: none;
+         font-size: 15px;
+         margin: 0;
+      }
+
+      .active,
+      .collapsible:hover {
+         background-color: #555;
+      }
+
+      .content {
+         background-color: white;
+         max-height: 0;
+         overflow: hidden;
+         transition: max-height 0.2s ease-out;
+      }
+
+      .collapsible:after {
+         content: 'v';
+         font-size: 13px;
+         font-weight: bold;
+         color: white;
+         float: right;
+         margin-left: 5px;
+      }
+
+      .active:after {
+         content: ">";
+      }
+
+      /** General Styling*/
+      body {
+         display: grid;
+         background-color: #000000;
+      }
+
+      a {
+         color: #000;
+         text-decoration: none;
+         font-weight: bold;
+      }
+
+      .page_title {
+         margin: 0px;
+         padding: 20px;
+      }
+
+      .mainshell {
+         width: 725px;
+         padding: 0px;
+         margin: 0px;
+         background: white;
+         position: relative;
+      }
+
+      .center_column {
+         width: 709px;
+         margin: auto;
+         padding: 0px;
+         line-height: 130%;
+         text-align: center;
+         background-color: white;
+      }
+
+      /** Dailies Grid Styling */
+
+      .category_table {
+         display: grid;
+         grid-template-columns: repeat(4, 25%);
+         grid-gap: 0;
+         justify-items: center;
+         margin: 0;
+         padding: 0;
+         grid-auto-rows: 1fr;
+      }
+
+      .category_table div {
+         aspect-ratio: 1;
+      }
+
+      .grid-box {
+         display: flex;
+         flex-flow: column nowrap;
+         margin-top: auto;
+      }
+
+      .daily_box {
+         padding: 10px;
+         text-align: center;
+         border: 1px solid #dfdfdf;
+      }
+
+      .quick_links {
+         padding: 10px;
+         text-align: center;
+         border: 1px solid #dfdfdf;
+      }
+   </style>
+   <LINK REL="SHORTCUT ICON" HREF="/favicon.ico">
+</head>
+
+<body>
+   <div class="center_column">
+      <div id="mainshell" valign="top">
+         <div class="page_title">
+            <h1>Rayenz's Dailies</h1>
+         </div>
+
+         <button type="button" class="collapsible">Quick Links</button>
+         <div class="grid-box content">
+            <div class="category_table">
+               <div class="quick_links">
+                  <a href="https://www.neopets.com/island/fight_training.phtml?type=status" target="_blank">
+                     <img src="https://pets.neopets.com/cp/zdhdomvb/1/7.png"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br><a href="https://www.neopets.com/island/fight_training.phtml?type=status"
+                     target="_blank">Blue_Eyes_WhDragon</a>
+               </div>
+               <div class="quick_links" valign="top"><a href="https://www.neopets.com/shops/wizard.phtml"
+                     target="_blank"><img src="https://images.neopets.com/shopkeepers/shopwizard.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/shops/wizard.phtml" target="_blank">Shop Wizard</a><br>
+               </div>
+               <div class="quick_links" valign="top"><a href="https://www.neopets.com/safetydeposit.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/sch_high_security_lunchbox.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/safetydeposit.phtml" target="_blank">Safety Deposit</a><br>
+               </div>
+               <div class="quick_links" valign="top"><a href="https://www.neopets.com/gallery/index.phtml"
+                     target="_blank"><img src="https://images.neopets.com/new_shopkeepers/1107.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/gallery/index.phtml" target="_blank">Gallery</a><br>
+               </div>
+               <div class="quick_links" valign="top"><a href="https://www.neopets.com/premium/" target="_blank"><img
+                        src="https://images.neopets.com/items/mall_spacefaeriedoll.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a href="https://www.neopets.com/premium/"
+                     target="_blank">Premium</a><br>
+               </div>
+            </div>
+         </div>
+
+         <button type="button" class="collapsible">Once Per Day</button>
+         <div class="grid-box content">
+            <div class="category_table">
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/questlog/" target="_blank">
+                     <img src="https://images.neopets.com/items/sch_nt_notebook.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br><a href="https://www.neopets.com/questlog/" target="_blank">Quest Log</a>
+                  <br><span class="text-small">(Daily/Weekly)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/halloween/applebobbing.phtml" target="_blank"><img
+                        src="https://images.neopets.com/items/spf_grapple_apple.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br>
+                  <a href="https://www.neopets.com/halloween/applebobbing.phtml" target="_blank">Apple
+                     Bobbing</a>
+                  <br>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/pirates/anchormanagement.phtml" target="_blank">
+                     <img src="https://images.neopets.com/items/gar_pirate_bouncyship.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br>
+                  <a href="https://www.neopets.com/pirates/anchormanagement.phtml" target="_blank">Anchor
+                     Management</a>
+                  <br>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/altador/council.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/toy_kingaltador_figure.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/altador/council.phtml" target="_blank">Council
+                     Chamber</a>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/worlds/geraptiku/tomb.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/bd_ger_goldtalisman.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/worlds/geraptiku/tomb.phtml" target="_blank">Deserted
+                     Tomb</a>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/pirates/forgottenshore.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/toy_chest_discoveredtreasure.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/pirates/forgottenshore.phtml" target="_blank">Forgotten
+                     Shore</a>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/desert/fruitmachine.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/food_desert3.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/desert/fruitmachine.phtml" target="_blank">Fruit
+                     Machine</a></div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/jelly/jelly.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/jel_stone_whole.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/jelly/jelly.phtml" target="_blank">Giant
+                     Jelly</a><br><span class="text-small">(Once a day)</span></td>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/prehistoric/omelette.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/om_sausage_pepperoni1.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/prehistoric/omelette.phtml" target="_blank">Giant
+                     Omelette</a></div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/moon/meteor.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/bd_meteor_rock.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/moon/meteor.phtml" target="_blank">Meteor</a><br><span
+                     class="text-small">(Once every hour, one prize a day)</span></div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/shenkuu/neggcave/"
+                     target="_blank"><img src="https://images.neopets.com/items/plu_fony14_neggbreaker.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/shenkuu/neggcave/" target="_blank">Mysterious Negg
+                     Cave</a>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/faerieland/tdmbgpop.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/plu_TDMBGPOP_replica.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/faerieland/tdmbgpop.phtml" target="_blank">The Discarded
+                     Magical
+                     Blue Grundo Plushie of Prosperity</a></div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/island/tombola.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/toy_squeezy_tombola.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/island/tombola.phtml" target="_blank">Tombola</a><br>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/trudys_surprise.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/gif_trudy_coin_purse.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/trudys_surprise.phtml" target="_blank">Trudy&#039;s
+                     Surprise</a></div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/medieval/wiseking.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/bvb_kinghagan.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/medieval/wiseking.phtml" target="_blank">Wise Old
+                     King</a>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/medieval/grumpyking.phtml" target="_blank">
+                     <img src="https://images.neopets.com/medieval/grumpy_king_notamused.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br><a href="https://www.neopets.com/medieval/grumpyking.phtml" target="_blank">Grumpy King</a>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/petpetlab.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/petpetlab_soot.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/petpetlab.phtml" target="_blank">Petpet Lab
+                     Ray</a><br><span class="text-small">(Once a day)</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/space/coincidence.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/rpp_reu2014_robotassispetpet.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/space/coincidence.phtml" target="_blank">The
+                     Coincidence</a>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/faerieland/caverns/index.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/bg_faerie_caverns.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/faerieland/caverns/index.phtml" target="_blank">Faerie
+                     Caverns</a>
+               </div>
+            </div>
+         </div>
+
+         <button type="button" class="collapsible">Battledome & Training</button>
+         <div class="grid-box content">
+            <div class="category_table">
+               <div class="daily_box" valign="top">
+                  <td valign="top"><a href="https://www.neopets.com/dome/" target="_blank"><img
+                           src="https://images.neopets.com/items/bd_spirit_blade.gif"
+                           style="max-width: 80px; max-height: 80px;"></a><br><a href="https://www.neopets.com/dome/"
+                        target="_blank">Battledome</a>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/quests.phtml" target="_blank"><img
+                        src="https://images.neopets.com/items/toy_faerie_princess.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/quests.phtml" target="_blank">Faerie Quests</a><br><span
+                     class="text-small">(Cookie=Once Per Day)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/pirates/academy.phtml" target="_blank">
+                     <img src="https://images.neopets.com/items/toy_pirate_cutlass.gif"
+                        style="max-width: 80px; max-height: 80px;">
+                  </a>
+                  <br><a href="https://www.neopets.com/pirates/academy.phtml" target="_blank">Swashbuckling Academy</a>
+                  <br><span class="text-small">(Anytime)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/island/training.phtml" target="_blank">
+                     <img src="https://images.neopets.com/items/bg_mystery_training.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br><a href="https://www.neopets.com/island/training.phtml" target="_blank">Mystery Island Training
+                     School</a>
+                  <br><span class="text-small">(Anytime)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/island/fight_training.phtml" target="_blank">
+                     <img src="https://images.neopets.com/items/nin_smoke_bomb.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/island/fight_training.phtml" target="_blank">Secret Ninja
+                     Training
+                     School</a><br><span class="text-small">(Anytime)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/faerieland/springs.phtml" target="_blank"><img
+                        src="https://images.neopets.com/items/toy_faerie_water.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/faerieland/springs.phtml" target="_blank">Healing
+                     Springs</a><br><span class="text-small">(Once every 30 minutes)</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/lab.phtml" target="_blank"><img
+                        src="https://images.neopets.com/items/labmap_09.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a href="https://www.neopets.com/lab.phtml"
+                     target="_blank">Lab Ray</a><br><span class="text-small">(Once
+                     a day)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/island/kitchen.phtml" target="_blank">
+                     <img src="https://images.neopets.com/items/toy_kitchenquest_flotsam.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/island/kitchen.phtml" target="_blank">Kitchen
+                     Quests</a><br><span class="text-small">(10 times a day)</span>
+               </div>
+            </div>
+         </div>
+
+         <button type="button" class="collapsible">Multiple Times a Day</button>
+         <div class="grid-box content">
+            <div class="category_table">
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/water/fishing.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/vor_evilcarp.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/water/fishing.phtml" target="_blank">Ye Olde Fishing
+                     Vortex</a><br><span class="text-small">(Random)</span></div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/desert/shrine.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/bd_desert_deathmask.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/desert/shrine.phtml" target="_blank">Coltzan&#039;s
+                     Shrine</a>
+                  <br>
+                  <span class="text-small">(Once every 13 hours; resets at midnight)</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/halloween/gravedanger/"
+                     target="_blank"><img src="https://images.neopets.com/items/boo_zombiehandbook.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/halloween/gravedanger/" target="_blank">Grave
+                     Danger</a><br><span class="text-small">(Up to 10 hours)</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/winter/kiosk.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/toy_kiosk_plushie.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/winter/kiosk.phtml" target="_blank">Ice Caves
+                     Kiosk</a><br><span class="text-small">(Once every six hours)</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/halloween/scratch.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/bd_sssidney_tickets.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/halloween/scratch.phtml" target="_blank">Haunted Fairgrounds
+                     Kiosk</a><br><span class="text-small">(Once every two hours)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/faerieland/wheel.phtml" target="_blank"><img
+                        src="https://images.neopets.com/items/sta_stw_wheelofexcitement.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br><a href="https://www.neopets.com/faerieland/wheel.phtml" target="_blank">Wheel of Excitement</a>
+                  <br><span class="text-small">(Once every two hours)</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/halloween/strtest/index.phtml"
+                     target="_blank"><img src="https://images.neopets.com/items/gar_testyourstrength.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/halloween/strtest/index.phtml" target="_blank">Test Your Strength
+                  </a>
+               </div>
+               <div class="daily_box" valign="top"><a
+                     href="https://www.neopets.com/halloween/process_cocoshy.phtml?coconut=3" target="_blank"><img
+                        src="https://items.jellyneo.net/assets/imgs/items/11037.gif?427"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/halloween/process_cocoshy.phtml?coconut=3" target="_blank">Coconut
+                     Shy</a>
+                  <br><span class="text-small">(20x a day)</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/wishing.phtml" target="_blank"><img
+                        src="https://items.jellyneo.net/assets/imgs/items/40889.gif?383"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/wishing.phtml" target="_blank">Wishing Well</a>
+                  <br><span class="text-small">(7x, twice a day)</span>
+               </div>
+            </div>
+         </div>
+
+         <button type="button" class="collapsible">Cash Flow</button>
+         <div class="grid-box content">
+            <div class="category_table">
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/market.phtml?type=till"
+                     target="_blank"><img src="https://images.neopets.com/items/broken_bag_np.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/market.phtml?type=till" target="_blank">Your Shop
+                     Till</a><br><span class="text-small">(Anytime)</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/bank.phtml" target="_blank">
+                     <img src="https://images.neopets.com/items/ltoo_scorch_bank.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br>
+                  <a href="https://www.neopets.com/bank.phtml" target="_blank">Bank Interest</a>
+                  <br>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/stockmarket.phtml?type=portfolio"
+                     target="_blank"><img src="https://images.neopets.com/games/game_stocks.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/stockmarket.phtml?type=portfolio" target="_blank">Stock Market
+                     Portfolio</a><br>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/pirates/foodclub.phtml?type=bet"
+                     target="_blank"><img src="https://images.neopets.com/games/pages/trophies/88_1.png"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/pirates/foodclub.phtml?type=bet" target="_blank">Food
+                     Club</a><br><span class="text-small">(~7 PM)</span>
+               </div>
+            </div>
+         </div>
+
+         <button type="button" class="collapsible">Restocking</button>
+         <div class="grid-box content">
+            <div class="category_table">
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/objects.phtml?type=shop&obj_type=2" target="_blank">
+                     <img src="https://www.jellyneo.net/assets/imgs/items/14998.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br><a href="https://www.neopets.com/objects.phtml?type=shop&obj_type=2"
+                     target="_blank">Kauvara's</a><br>
+                  <span class="text-small">Snow Morphing Potions</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/objects.phtml?type=shop&obj_type=37"
+                     target="_blank"><img src="https://www.jellyneo.net/assets/imgs/items/18566.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/objects.phtml?type=shop&obj_type=37" target="_blank">Snow
+                     Food</a><br>
+                  <span class="text-small">Snow/Ice Food</span>
+               </div>
+               <div class="daily_box" valign="top"><a href="https://www.neopets.com/objects.phtml?type=shop&obj_type=58"
+                     target="_blank"><img src="https://www.jellyneo.net/assets/imgs/items/9233.gif"
+                        style="max-width: 80px; max-height: 80px;"></a><br><a
+                     href="https://www.neopets.com/objects.phtml?type=shop&obj_type=58" target="_blank">Stamps</a><br>
+                  <span class="text-small">Snowager Stamp</span>
+               </div>
+               <div class="daily_box" valign="top">
+                  <a href="https://www.neopets.com/objects.phtml?type=shop&obj_type=68" target="_blank">
+                     <img src="https://www.jellyneo.net/assets/imgs/items/14168.gif"
+                        style="max-width: 80px; max-height: 80px;"></a>
+                  <br>
+                  <a href="https://www.neopets.com/objects.phtml?type=shop&obj_type=68" target="_blank">Coins</a><br>
+                  <span class="text-small">Snow Petpet Paint Brush</span>
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <button type="button" class="collapsible">Specific/Alerted Timing</button>
+      <div class="grid-box content">
+         <div class="category_table">
+            <div class="daily_box" valign="top"><a href="https://www.neopets.com/winter/snowager.phtml"
+                  target="_blank"><img src="https://images.neopets.com/items/toy_snowager_plushie.gif"
+                     style="max-width: 80px; max-height: 80px;"></a><br><a
+                  href="https://www.neopets.com/winter/snowager.phtml" target="_blank">Snowager</a><br><span
+                  class="text-small">(6-7am NST, 2-3pm NST, 10-11pm
+                  NST)</span>
+            </div>
+            <div class="daily_box" valign="top">
+               <a href="https://www.neopets.com/halloween/garage.phtml" target="_blank"><img
+                     src="https://images.neopets.com/items/fur_cobwebs.gif"
+                     style="max-width: 80px; max-height: 80px;"></a><br><a
+                  href="https://www.neopets.com/halloween/garage.phtml" target="_blank">Almost Abandoned
+                  Attic</a><br><span class="text-small">(Restock times vary)</span>
+            </div>
+         </div>
+      </div>
+
+      <button type="button" class="collapsible">Inoften</button>
+      <div class="grid-box content">
+         <div class="category_table">
+            <div class="daily_box" valign="top">
+               <a href="https://www.neopets.com/freebies/" target="_blank">
+                  <img src="https://images.neopets.com/items/fur_y7_calendar.gif"
+                     style="max-width: 80px; max-height: 80px;"></a>
+               <br><a href="https://www.neopets.com/freebies/" target="_blank">Monthly Freebies</a>
+               <br><span class="text-small">(Once a month)</span>
+            </div>
+            <div class="daily_box" valign="top"><a href="https://www.neopets.com/magma/pool.phtml" target="_blank"><img
+                     src="https://images.neopets.com/items/bg_magma_pool.gif"
+                     style="max-width: 80px; max-height: 80px;"></a><br><a
+                  href="https://www.neopets.com/magma/pool.phtml" target="_blank">Magma Pool</a><br><span
+                  class="text-small">(Once every 8 days - 11:47 AM NST / 2:47 PM EST)</span>
+            </div>
+            <div class="daily_box" valign="top"><a href="https://www.neopets.com/prehistoric/battleground/"
+                  target="_blank"><img src="https://images.neopets.com/items/bd_tyweof2013_itsashovel.gif"
+                     style="max-width: 80px; max-height: 80px;"></a><br><a
+                  href="https://www.neopets.com/prehistoric/battleground/" target="_blank">Tyrannian
+                  Battleground</a><br><span class="text-small">(daily)</span>
+            </div>
+            <div class="daily_box" valign="top"><a href="https://www.neopets.com/winter/adventcalendar.phtml"
+                  target="_blank"><img src="https://images.neopets.com/items/fur_mistletoe_wreath.gif"
+                     style="max-width: 80px; max-height: 80px;"></a><br><a
+                  href="https://www.neopets.com/winter/adventcalendar.phtml" target="_blank">Advent
+                  Calendar</a><br><span class="text-small">(Once a day in December)</span></div>
+            <div class="daily_box" valign="top"><a href="https://www.neopets.com/~SparklesRoyal" target="_blank"><img
+                     src="https://images.neopets.com/items/piratefood_9.gif"
+                     style="max-width: 80px; max-height: 80px;"></a><br><a href="https://www.neopets.com/~SparklesRoyal"
+                  target="_blank">Golden Dubloon Menu</a><br>
+               <span class="text-small">(Split Dubloons)</span>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <script type="text/javascript">
+      window.addEventListener('DOMContentLoaded', (event) => {
+         //Collapsible event listener
+         var coll = document.getElementsByClassName("collapsible");
+
+         for (var i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function () {
+               this.classList.toggle("active");
+               var content = this.nextElementSibling;
+               if (content.style.maxHeight) {
+                  content.style.maxHeight = null;
+               } else {
+                  content.style.maxHeight = content.scrollHeight + "px";
+               }
+            });
+         }
+      })
+   </script>
+</body>
+
+</html>

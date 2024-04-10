@@ -1,0 +1,106 @@
+/* Collapsible Styling */
+.collapsible {
+    background-color: #777;
+    color: white;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+    margin: 0;
+}
+
+.active,
+.collapsible:hover {
+    background-color: #555;
+}
+
+.content {
+    background-color: white;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease-out;
+}
+
+.collapsible:after {
+    content: 'v';
+    font-size: 13px;
+    font-weight: bold;
+    color: white;
+    float: right;
+    margin-left: 5px;
+}
+
+.active:after {
+    content: ">";
+}
+
+/** General Styling*/
+body {
+    display: grid;
+    background-color: #000000;
+}
+
+a {
+    color: #000;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.page_title {
+    margin: 0px;
+    padding: 20px;
+}
+
+.mainshell {
+    width: 725px;
+    padding: 0px;
+    margin: 0px;
+    background: white;
+    position: relative;
+}
+
+.center_column {
+    width: 709px;
+    margin: auto;
+    padding: 0px;
+    line-height: 130%;
+    text-align: center;
+    background-color: white;
+}
+
+/** Dailies Grid Styling */
+
+.category_table {
+    display: grid;
+    grid-template-columns: repeat(4, 25%);
+    grid-gap: 0;
+    justify-items: center;
+    margin: 0;
+    padding: 0;
+    grid-auto-rows: 1fr;
+}
+
+.category_table div {
+    aspect-ratio: 1;
+}
+
+.grid-box {
+    display: flex;
+    flex-flow: column nowrap;
+    margin-top: auto;
+}
+
+.daily_box {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #dfdfdf;
+}
+
+.quick_links {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #dfdfdf;
+}
