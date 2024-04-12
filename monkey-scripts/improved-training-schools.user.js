@@ -3,7 +3,6 @@
 // @description  Adds some much needed useability functions to the training school(s)
 // @namespace    http://tampermonkey.net/
 // @version      2024-04-08
-// @description  try to take over the world!
 // @author       rayenz-akusiom
 // @match        https://www.neopets.com/pirates/academy.phtml?type=status
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=neopets.com
@@ -11,7 +10,7 @@
 
 /**
  * Feature List:
- * 
+ *
  * - Works in Swashbuckling *only* for now
  * - HSD Replaces Level in Pet Titles
  * - Order by HSD (default DESC)
@@ -31,34 +30,55 @@
 * Needs to work for all three training schools (or at least one script per?)
 **/
 
-let OPT_REPLACE_PET_TABLE = true; // Controls whether or not this script replaces the UI. Break in case of emergency, basically.
-let OPT_SORT_ORDER = "DESC"; // Valid options are ASC or DESC
-let GRADUATE_LEVEL = 40; // Level pets graduate from training
+/**
+* Options
+**/
+const OPT_REPLACE_PET_TABLE = true; // Controls whether or not this script replaces the UI. Break in case of emergency, basically.
+const OPT_SORT_ORDER = "DESC"; // Valid options are ASC or DESC
+const OPT_LOCKING = true; // Enables the locking feature
 
+/**
+* Settings
+**/
+const GRADUATE_LEVEL = 40; // Level pets graduate from training
+
+/**
+* Main
+**/
+setUpClasses();
 let petData = getPets();
 replacePetTable(petData);
 
-function replacePetTable(petData){
+function replacePetTable()
+{
     if (!OPT_REPLACE_PET_TABLE){
         return;
     }
-    let petTable = document.getElementsByTagName("table")[8];
-    petTable.innerHTML = "";
+
+    let petTable = document.getElementById("content");
+    let containerLocation = petTable.getElementsByTagName("p")[3];
+    containerLocation.innerHTML = "";
+
+    let petOuterContainer = document.createElement("div");
+    containerLocation.appendChild(petOuterContainer);
+    petOuterContainer.classList.add("training-outer-container");
+
     for (const [petName, petStats] of petData.entries()){
+        let petContainer = document.createElement("div");
+        petContainer.classList.add("pet-container");
+        petOuterContainer.appendChild(petContainer);
+
         //Name Row
-        let nameRow = petTable.insertRow();
-        let nameCell = nameRow.insertCell();
-        nameCell.style.backgroundColor = "#efefef";
-        nameCell.style.width = 450;
-        nameCell.colSpan = 2;
+        let nameCell = document.createElement("div");
+        petContainer.appendChild(nameCell);
+        nameCell.classList.add( "name-cell" );
         nameCell.innerHTML = petStats.petTitle;
 
         // Status Row
-        let statusRow = petTable.insertRow();
-        let statusCell = statusRow.insertCell();
-        statusCell.style.backgroundColor = "white";
-        statusCell.style.width = 250;
-        statusCell.style.textAlign = "center";
+        let statusCell = document.createElement("div");
+        petContainer.appendChild(statusCell);
+        statusCell.classList.add( "status-cell" );
+        statusCell.classList.add(petStats.locked ? "locked" : "unlocked");
         statusCell.innerHTML =
             `
           <img src="//pets.neopets.com/cpn/${petName}/1/2.png" width="150" height="150" border="0">
@@ -74,9 +94,10 @@ function replacePetTable(petData){
           <br>
           `;
 
-        let progressCell = statusRow.insertCell();
-        progressCell.width = 250;
-        progressCell.style.textAlign = "center";
+        let progressCell = document.createElement("div");
+        petContainer.appendChild(progressCell);
+        progressCell.classList.add( "status-cell" );
+        progressCell.classList.add(petStats.locked ? "locked" : "unlocked");
         progressCell.innerHTML = petStats.petProgress;
     }
 }
@@ -97,12 +118,25 @@ function getPets() {
             petStats.petTitle = reformatPetTitle(petStats, petTitle);
             // Get Pet Progress from next row
             petStats.petProgress = nextRow.cells[1].innerHTML;
+
+            // Apply locking state
+            petStats.locked = shouldLockPet(petStats);
+
             // Push to array
             petStatsMap.set(petName, petStats);
         }
     }
 
     return sortPetMap(petStatsMap);
+}
+
+function shouldLockPet(petStats){
+    //Lock Graduates
+    if (petStats.level > GRADUATE_LEVEL){
+        return true;
+    }
+
+    return false;
 }
 
 function sortPetMap(mapToSort){
@@ -150,10 +184,36 @@ function getPetStats(petCell){
     return stats;
 }
 
-function printArrayInnerHTML(arr) {
-    arr.forEach((element) => console.log(element.innerHTML));
-}
-
-function printMapInnerHTML(arr) {
-    arr.forEach((key, value) => console.log(key + ": " + value.innerHTML));
+function setUpClasses(){
+    let styleTag = document.getElementsByTagName("style")[0];
+    styleTag.innerHTML += " .locked { background-color: #efefef; } ";
+    styleTag.innerHTML += " .unlocked { background-color: white; } ";
+    styleTag.innerHTML +=
+        ` .training-outer-container {
+           display: block;
+           width: 500;
+           margin: auto;
+           padding: 0;
+      }
+      .pet-container {
+           display: grid;
+           grid-template-columns: repeat(2, 50%);
+           grid-gap: 0;
+           margin: 0;
+           padding: 0;
+           align-items: center;
+           grid-template-rows: 1fr min-content;
+      }
+      .name-cell {
+         background-color: #efefef;
+         text-align: left;
+         grid-column: span 2;
+         padding: 3px;
+         justify-items: center;
+      }
+      .status-cell {
+         text-align: center;
+         justify-items: center;
+         padding: 3px;
+      } `;
 }
