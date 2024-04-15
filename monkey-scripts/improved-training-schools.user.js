@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
-// @description  Adds some much needed useability functions to the training school(s)
+// @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
 // @namespace    http://tampermonkey.net/
 // @version      2024-04-08
 // @author       rayenz-akusiom
 // @match        https://www.neopets.com/pirates/academy.phtml?type=status
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=neopets.com
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
 
 /**
@@ -14,19 +16,19 @@
  * - Works in Swashbuckling *only* for now
  * - HSD Replaces Level in Pet Titles
  * - Order by HSD (default DESC)
- * - Pushes Graduates (overleveled) pets to bottom of list
+ * - Added lock functionality to prevent accidental interaction with "finished" pets
+ * - Pushes Graduates (overleveled) and manually locked pets to bottom of list
  */
 
 /**
 * Ideas:
-* Sort by HSD - Done
 * Reverseable Sort? - Done as an Option, button for later.
 * Elevate Finished Training to the top
 * Combine status and course page
+* Give each pet a "badge" (dubloon) for training costs
 * Hide or drop to bottom graduates (based on level iirc?) - Done
 *  - Still need to give a different treatment of some kind (locked treatment?)
 * Training suggestions (for efficient training)
-* Lock training for "done" pets (ex: Gal is L54)
 * Needs to work for all three training schools (or at least one script per?)
 **/
 
@@ -41,6 +43,21 @@ const OPT_LOCKING = true; // Enables the locking feature
 * Settings
 **/
 const GRADUATE_LEVEL = 40; // Level pets graduate from training
+
+/**
+* Other globals
+**/
+const LOCKED_ICON = "&#128274;"
+const UNLOCKED_ICON = "&#128275;"
+
+/**
+* Monkey Storage
+**/
+const PET_STORAGE = "petStorage";
+let petStorage = new Map();
+if (GM_getValue(PET_STORAGE)){
+    petStorage = new Map(JSON.parse(GM_getValue(PET_STORAGE)));
+}
 
 /**
 * Main
@@ -65,20 +82,23 @@ function replacePetTable()
 
     for (const [petName, petStats] of petData.entries()){
         let petContainer = document.createElement("div");
+        petContainer.id = `petContainer-${petName}`;
         petContainer.classList.add("pet-container");
         petOuterContainer.appendChild(petContainer);
 
         //Name Row
-        let nameCell = document.createElement("div");
-        petContainer.appendChild(nameCell);
-        nameCell.classList.add( "name-cell" );
+        let nameRow = document.createElement("div");
+        nameRow.classList.add( "name-cell" );
+        petContainer.appendChild(nameRow);
+
+        let nameCell = document.createElement("div")
         nameCell.innerHTML = petStats.petTitle;
+        nameRow.appendChild(nameCell);
 
         // Status Row
         let statusCell = document.createElement("div");
         petContainer.appendChild(statusCell);
-        statusCell.classList.add( "status-cell" );
-        statusCell.classList.add(petStats.locked ? "locked" : "unlocked");
+        statusCell.classList.add("status-cell");
         statusCell.innerHTML =
             `
           <img src="//pets.neopets.com/cpn/${petName}/1/2.png" width="150" height="150" border="0">
@@ -96,9 +116,20 @@ function replacePetTable()
 
         let progressCell = document.createElement("div");
         petContainer.appendChild(progressCell);
-        progressCell.classList.add( "status-cell" );
-        progressCell.classList.add(petStats.locked ? "locked" : "unlocked");
+        progressCell.id = `progressCell-${petName}`;
+        progressCell.classList.add("status-cell");
+        progressCell.inert = petStats.locked;
         progressCell.innerHTML = petStats.petProgress;
+
+        // Lock Button
+        let lockButton = document.createElement("button");
+        let lockCell = document.createElement("div");
+        lockButton.innerHTML = getLockIcon(petStats.locked);
+        lockButton.addEventListener("click", function() {togglePetLock(lockButton, petName)});
+        lockCell.classList.add("lock-container");
+        lockCell.appendChild(lockButton);
+        nameRow.appendChild(lockCell);
+        petContainer.classList.add(petStats.locked ? "locked" : "unlocked");
     }
 }
 
@@ -114,8 +145,11 @@ function getPets() {
             let nextRow = petTable.rows[i+1];
             // Get Pet Stats from next row
             let petStats = getPetStats(nextRow.cells[0]);
+
             // Fill in the title for later
             petStats.petTitle = reformatPetTitle(petStats, petTitle);
+            petStats.name = petName;
+
             // Get Pet Progress from next row
             petStats.petProgress = nextRow.cells[1].innerHTML;
 
@@ -127,16 +161,48 @@ function getPets() {
         }
     }
 
-    return sortPetMap(petStatsMap);
+    // Sort the map and store it
+    let sortedPetStatsMap = sortPetMap(petStatsMap);
+    storeMonkeyMap(PET_STORAGE, sortedPetStatsMap);
+
+    return sortedPetStatsMap;
 }
 
 function shouldLockPet(petStats){
+    // Locked Pets
+    if (petStorage.get(petStats.name) && petStorage.get(petStats.name).locked){
+        return true;
+    }
+
     //Lock Graduates
     if (petStats.level > GRADUATE_LEVEL){
         return true;
     }
 
     return false;
+}
+
+function togglePetLock(lockButton, petName){
+    let petStats = petStorage.get(petName);
+    petStats.locked = !petStats.locked;
+    petStorage.set(petName, petStats);
+    storeMonkeyMap(PET_STORAGE, petStorage);
+
+    // Change the lock button
+    lockButton.innerHTML = getLockIcon(petStats.locked);
+
+    // Update the treatment for the petContainer
+    const petContainer = document.getElementById(`petContainer-${petName}`);
+    petContainer.classList.add(petStats.locked ? "locked" : "unlocked");
+    petContainer.classList.remove(petStats.locked ? "unlocked" : "locked");
+
+    // Progress Cell needs to change inertness (can't do this at container level because of the lock button)
+    const progressCell = document.getElementById(`progressCell-${petName}`);
+    progressCell.inert = petStats.locked;
+}
+
+function storeMonkeyMap(key, mapToStore){
+    GM_setValue(key, JSON.stringify(Array.from(mapToStore.entries())));
 }
 
 function sortPetMap(mapToSort){
@@ -150,14 +216,21 @@ function sortPetMap(mapToSort){
         sortedArray = sortedArray.sort((firstPet, secondPet) => firstPet[1].hsd - secondPet[1].hsd);
     }
 
-    // Suppress graduates
+    // Suppress locked pets
     if (OPT_SORT_ORDER == "DESC") {
-        // Push "Graduates" to the bottom:
+        let elevatedPets = [];
+        let noChangesPets = [];
+        let suppressedPets = [];
         for(let pet of sortedArray){
-            if(pet[1].level > GRADUATE_LEVEL) {
-                sortedArray.push(sortedArray.shift());
+            if(pet[1].locked) {
+                suppressedPets.push(pet);
+            }
+            else {
+                noChangesPets.push(pet);
             }
         }
+
+        sortedArray = elevatedPets.concat(noChangesPets).concat(suppressedPets);
     }
 
     return new Map(sortedArray);
@@ -209,11 +282,23 @@ function setUpClasses(){
          text-align: left;
          grid-column: span 2;
          padding: 3px;
-         justify-items: center;
+         justify-items: left;
+         align-items: center;
+         display: grid;
+         grid-template-columns: auto min-content;
       }
       .status-cell {
          text-align: center;
          justify-items: center;
          padding: 3px;
-      } `;
+      }
+      .lock-container {
+        text-align: right;
+        padding: 3px;
+      }`
+    ;
+}
+
+function getLockIcon(locked){
+    return locked ? LOCKED_ICON : UNLOCKED_ICON;
 }
