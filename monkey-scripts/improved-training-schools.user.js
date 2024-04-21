@@ -2,7 +2,7 @@
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
 // @namespace    http://tampermonkey.net/
-// @version      2024-04-20
+// @version      2024-04-21
 // @author       rayenz-akusiom
 // @match        https://www.neopets.com/pirates/academy.phtml?type=status
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=neopets.com
@@ -28,12 +28,14 @@
 * Ideas:
 * Reverseable Sort? - Done as an Option, button for later.
 * Needs to work for all three training schools (or at least one script per?)
+* Make nicer to look at
 **/
 
 /**
 * Options
 **/
 const OPT_REPLACE_PET_TABLE = true; // Controls whether or not this script replaces the UI. Break in case of emergency, basically.
+const V2_UI = true; // Controls if it uses the nicer UI or not.
 const OPT_SORT_ORDER = "DESC"; // Valid options are ASC or DESC
 const OPT_LOCKING = true; // Enables the locking feature
 
@@ -45,10 +47,22 @@ const GRADUATE_LEVEL = 40; // Level pets graduate from training
 /**
 * Badges
 **/
-const BADGE_ONE_DB = 'https://images.neopets.com/items/dubloon1.gif';
-const BADGE_TWO_DB = 'https://images.neopets.com/items/dubloon2.gif';
-const BADGE_FIVE_DB = 'https://images.neopets.com/items/dubloon3.gif';
 const BADGE_GRADUATE = 'https://images.neopets.com/items/clo_grad_vanda_hat.gif';
+
+/**
+ * School Settings (to help with the different schools)
+ */
+const SCHOOL_SETTINGS = new Map();
+const SCHOOL_SWASHBUCKLING = "swashbuckling";
+SCHOOL_SETTINGS.set(SCHOOL_SWASHBUCKLING, {
+    tiers: [
+        { cost: "Graduated!", image: BADGE_GRADUATE},
+        { cost: "Five Dubloon Coin", image: 'https://images.neopets.com/items/dubloon3.gif', maxLevel: 40},
+        { cost: "Five Dubloon Coin", image: 'https://images.neopets.com/items/dubloon3.gif', maxLevel: 30},
+        { cost: "Two Dubloon Coin", image: 'https://images.neopets.com/items/dubloon2.gif', maxLevel: 20},
+        { cost: "One Dubloon Coin", image: 'https://images.neopets.com/items/dubloon1.gif', maxLevel: 10}
+    ]
+    });
 
 /**
 * Other globals
@@ -69,9 +83,9 @@ if (GM_getValue(PET_STORAGE)){
 * Main
 **/
 setUpClasses();
-replacePetTable(getPets(document));
+replacePetTableV2(getPets(document));
 
-function replacePetTable(petData)
+function replacePetTableV2(petData)
 {
     if (!OPT_REPLACE_PET_TABLE){
         return;
@@ -108,41 +122,56 @@ function replacePetTable(petData)
         statusCell.innerHTML =
             `
           <img src="//pets.neopets.com/cpn/${petName}/1/2.png" width="150" height="150" border="0">
-          <br>
-          <br>
-          <img src="${petStats.badge}" border="0">
-          <br>
-          <br>
-          <span id="${petName}-enroll-level">Lvl : <font color="green"><b>${formatStat("level", petStats)}</b></font></span>
-          <br>
-          <span id="${petName}-enroll-health">Hp : <b>${formatStat("hp", petStats)}</b></span>
-          <br>
-          <span id="${petName}-enroll-strength">Str : <b>${formatStat("strength", petStats)}</b></span>
-          <br>
-          <span id="${petName}-enroll-defence">Def : <b>${formatStat("defence", petStats)}</b></span>
-          <br>
-          <br>
+          <div class="petStats-stats" id="petStats-container-${petName}">
+            <div class="petStats-row" id="cost-${petName}">
+                <div class="petStats-badge-icon" id="enroll-badge-${petName}"></div>
+                <div class="petStats-details" id="enroll-cost-${petName}"><b>${petStats.badge.cost}</b></div>
+            </div>
+            <div class="petStats-row" id="level-${petName}">
+                <div class="petStats-level-icon"></div>
+                <div class="petStats-details" id="enroll-level-${petName}">Lvl : <font color="green"><b>${petStats.level}</b></font></div>
+            </div>
+            <div class="petStats-row" id="hp-${petName}">
+                <div class="petStats-hp-icon"></div>
+                <div class="petStats-details" id="enroll-hp-${petName}">Hp : <b>${petStats.hp}</b></div>
+            </div>
+            <div class="petStats-row" id="strength-${petName}">
+                <div class="petStats-strength-icon"></div>
+                <div class="petStats-details" id="enroll-strength-${petName}">Str : <b>${petStats.strength}</b></div>
+            </div>
+            <div class="petStats-row" id="defence-${petName}">
+                <div class="petStats-defence-icon"></div>
+                <div class="petStats-details" id="enroll-defence-${petName}">Def : <b>${petStats.defence}</b></div>
+            </div>
+          </div>
           `;
+
+        // Update the background image for the cost badge
+        const badgeIcon = document.getElementById(`enroll-badge-${petName}`);
+        badgeIcon.style.backgroundImage = `url(${petStats.badge.image}`;
+
+        // Update the background color for the recommended stat
+        formatRecommendedStat(petStats);
 
         // Only set up the enrollment behaviour if there's no progress being reported.
         if (petStats.petProgress.trim().length === 0){
-            let statSpans = [];
-            let levelSpan = document.getElementById(`${petName}-enroll-level`);
-            levelSpan.addEventListener("click", function() {submitCourse(petName, "Level")});
-            statSpans.push(levelSpan);
-            let healthSpan = document.getElementById(`${petName}-enroll-health`);
-            healthSpan.addEventListener("click", function() {submitCourse(petName, "Endurance")});
-            statSpans.push(healthSpan);
-            let strengthSpan = document.getElementById(`${petName}-enroll-strength`);
-            strengthSpan.addEventListener("click", function() {submitCourse(petName, "Strength")});
-            statSpans.push(strengthSpan);
-            let defenceSpan = document.getElementById(`${petName}-enroll-defence`);
-            defenceSpan.addEventListener("click", function() {submitCourse(petName, "Defence")});
-            statSpans.push(defenceSpan);
+            let statDivs = [];
+            let levelDiv = document.getElementById(`enroll-level-${petName}`);
+            levelDiv.addEventListener("click", function() {submitCourse(petName, "Level")});
+            statDivs.push(levelDiv);
+            let healthDiv = document.getElementById(`enroll-hp-${petName}`);
+            healthDiv.addEventListener("click", function() {submitCourse(petName, "Endurance")});
+            statDivs.push(healthDiv);
+            let strengthDiv = document.getElementById(`enroll-strength-${petName}`);
+            strengthDiv.addEventListener("click", function() {submitCourse(petName, "Strength")});
+            statDivs.push(strengthDiv);
+            let defenceDiv = document.getElementById(`enroll-defence-${petName}`);
+            defenceDiv.addEventListener("click", function() {submitCourse(petName, "Defence")});
+            statDivs.push(defenceDiv);
 
-            for (let statSpan of statSpans){
-                statSpan.onmouseover = function() {mouseOver(statSpan)};
-                statSpan.onmouseout = function() {mouseOut(statSpan)};
+            for (let statDiv of statDivs){
+                statDiv.onmouseover = function() {mouseOver(statDiv)};
+                statDiv.onmouseout = function() {mouseOut(statDiv)};
             }
         }
 
@@ -189,7 +218,7 @@ function getPets(pageHandle) {
             petStats.locked = shouldLockPet(petStats);
 
             // Figure out their badge
-            petStats.badge = determineBadge(petStats);
+            petStats.badge = determineBadge(SCHOOL_SWASHBUCKLING, petStats);
 
             // Push to array
             petStatsMap.set(petName, petStats);
@@ -217,25 +246,23 @@ function shouldLockPet(petStats){
     return false;
 }
 
-function determineBadge(petStats){
-    if(!canTrain(petStats)){
-        return BADGE_GRADUATE;
+function determineBadge(school, petStats){
+    const schoolSettings = SCHOOL_SETTINGS.get(school);
+    let badge = schoolSettings.tiers[0];
+
+    for (let i = 1; i < schoolSettings.tiers.length; i++){
+        if (petStats.level < schoolSettings.tiers[i].maxLevel){
+            badge = schoolSettings.tiers[i];
+        }
+        else {
+            return badge;
+        }
     }
-    else if (petStats.level <= 10) {
-        return BADGE_ONE_DB;
-    }
-    else if (petStats.level <= 20) {
-        return BADGE_TWO_DB;
-    }
-    else
-    {
-        return BADGE_FIVE_DB;
-    }
+
+    return badge;
 }
 
 function submitCourse(petName, stat){
-    const courseSubmissionUrl = "https://www.neopets.com/pirates/process_academy.phtml";
-
     // Construct a FormData instance
     const formData = new FormData();
 
@@ -398,6 +425,13 @@ function findOutlier(mode, petStats){
     return outlierKey;
 }
 
+function formatRecommendedStat(petStats){
+    const recommendedStat = document.getElementById(`${petStats.recommendNext}-${petStats.name}`)
+    if (recommendedStat){
+        recommendedStat.classList.add("recommended-stat");
+    }
+}
+
 function formatStat(key, petStats){
     if (key === petStats.recommendNext){
         return `&gt;${petStats[key]}&lt;`;
@@ -456,6 +490,59 @@ function setUpClasses(){
       }
       .stat-hover {
        color: red;
+      }
+      .petStats-hp-icon {
+        background-image: url(https://images.neopets.com/themes/h5/basic/images/health-icon.png);
+      }
+      .petStats-defence-icon {
+        background-image: url(https://images.neopets.com/items/armorednegg.gif);
+      }
+      .petStats-strength-icon {
+        background-image: url(https://images.neopets.com/themes/h5/basic/images/equip-icon.png);
+      }
+      .petStats-level-icon {
+        background-image: url(https://images.neopets.com/themes/h5/basic/images/level-icon.png);
+      }
+      .petStats-details {
+        padding-top: 7px;
+        padding-bottom: 7px;
+        text-align: left;
+      } 
+      .petStats-stats {
+        margin: 15px auto 10px;
+        width: 90%;
+        height: auto;
+        box-sizing: border-box;
+        padding: 10px;
+        border-radius: 15px;
+        background-color: #E6E4DD;
+        display: block
+      }
+      .petStats-row {
+        margin: 3px auto 3px;
+        width: 90%;
+        height: 30px;
+        border-radius: 15px;
+        box-sizing: border-box;
+        display: grid;
+        grid-template-columns: auto 90%;
+        grid-gap: 3px;
+        font-size: 10pt;
+        text-align: left;
+        background-color: white;
+      }
+      .petStats-hp-icon, .petStats-strength-icon, .petStats-level-icon, .petStats-defence-icon, .petStats-badge-icon {
+        height: 30px;
+        width: 30px;
+        border-radius: 50%;
+        border: 3px solid #DFC5FE;
+        background-color: white;
+        background-position: center;
+        background-size: 90%;
+        background-repeat: no-repeat;
+      }
+      .recommended-stat{
+        background-color: #90EE90
       }
       `
     ;
