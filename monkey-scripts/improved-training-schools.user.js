@@ -98,6 +98,7 @@ function replacePetTable(petData)
 
         let nameCell = document.createElement("div")
         nameCell.innerHTML = petStats.petTitle;
+        nameCell.id = `pet-title-${petName}`;
         nameRow.appendChild(nameCell);
 
         // Status Row
@@ -254,6 +255,8 @@ function submitCourse(petName, stat){
             let petData = getPets(dataWrapper);
             let progessCellToUpdate = document.getElementById(`progressCell-${petName}`);
             progessCellToUpdate.innerHTML = petData.get(petName).petProgress;
+            let nameCellToUpdate = document.getElementById(`pet-title-${petName}`);
+            nameCellToUpdate.innerHTML = petData.get(petName).petTitle;
         },
         error: function(xhr, status, error) {
             console.log(status + error)
