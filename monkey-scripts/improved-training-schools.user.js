@@ -2,7 +2,7 @@
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
 // @namespace    http://tampermonkey.net/
-// @version      2024-04-21-V2
+// @version      2024-04-21-V3
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -89,13 +89,12 @@ SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
     url: "island/fight_training.phtml",
     graduateLevel: null,
     tiers: [
-        { cost: "Graduated!", image: BADGE_GRADUATE},
-        { cost: "6 Red Codestones", image: 'https://images.neopets.com/items/codestone16.gif', maxLevel: 750},
-        { cost: "5 Red Codestones", image: 'https://images.neopets.com/items/codestone15.gif', maxLevel: 600},
-        { cost: "4 Red Codestones", image: 'https://images.neopets.com/items/codestone14.gif', maxLevel: 500},
-        { cost: "3 Red Codestones", image: 'https://images.neopets.com/items/codestone13.gif', maxLevel: 400},
-        { cost: "2 Red Codestones", image: 'https://images.neopets.com/items/codestone12.gif', maxLevel: 300},
-        { cost: "1 Red Codestone", image: 'https://images.neopets.com/items/codestone11.gif', maxLevel: 20}
+        { cost: "6 Red Codestones", image: 'https://images.neopets.com/items/codestone16.gif', maxLevel: null},
+        { cost: "5 Red Codestones", image: 'https://images.neopets.com/items/codestone15.gif', maxLevel: 750},
+        { cost: "4 Red Codestones", image: 'https://images.neopets.com/items/codestone14.gif', maxLevel: 600},
+        { cost: "3 Red Codestones", image: 'https://images.neopets.com/items/codestone13.gif', maxLevel: 500},
+        { cost: "2 Red Codestones", image: 'https://images.neopets.com/items/codestone12.gif', maxLevel: 400},
+        { cost: "1 Red Codestone", image: 'https://images.neopets.com/items/codestone11.gif', maxLevel: 300}
     ],
     hpMult: 3,
     petTableIndex: 5
@@ -119,9 +118,16 @@ if (GM_getValue(PET_STORAGE)){
 /**
 * Main
 **/
-setUpClasses();
 const SCHOOL = detectSchool();
-replacePetTable(getPets(document));
+setUpClasses();
+
+if (document.readyState !== 'loading') {
+    replacePetTable(getPets(document));
+    return;
+  }
+  else {
+    document.addEventListener('DOMContentLoaded', replacePetTable(getPets(document)));
+}
 
 function replacePetTable(petData)
 {
