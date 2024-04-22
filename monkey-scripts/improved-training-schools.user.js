@@ -296,7 +296,7 @@ function determineBadge(petStats){
     }
 
     for (let i = 1; i < SCHOOL.tiers.length; i++){
-        if (petStats.level < SCHOOL.tiers[i].maxLevel){
+        if (petStats.level <= SCHOOL.tiers[i].maxLevel){
             badge = SCHOOL.tiers[i];
         }
         else {
