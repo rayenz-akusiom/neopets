@@ -2,9 +2,11 @@
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
 // @namespace    http://tampermonkey.net/
-// @version      2024-04-21
+// @version      2024-04-21-V2
 // @author       rayenz-akusiom
-// @match        https://www.neopets.com/pirates/academy.phtml?type=status
+// @match        *://*.neopets.com/pirates/academy.phtml?type=status*
+// @match        *://*.neopets.com/island/*training.phtml?*type=status*
+// @match        *://*.neopets.com/island/*fight_training.phtml?*type=status*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=neopets.com
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -13,7 +15,7 @@
 /**
  * Feature List:
  *
- * - Works in Swashbuckling *only* for now
+ * - Works in all training schools!
  * - HSD Replaces Level in Pet Titles
  * - Order by HSD (default DESC)
  * - Added lock functionality to prevent accidental interaction with "finished" pets
@@ -27,8 +29,7 @@
 /**
 * Ideas:
 * Reverseable Sort? - Done as an Option, button for later.
-* Needs to work for all three training schools (or at least one script per?)
-* Make nicer to look at
+* Make nicer to look at (Cards?)
 **/
 
 /**
@@ -38,11 +39,6 @@ const OPT_REPLACE_PET_TABLE = true; // Controls whether or not this script repla
 const V2_UI = true; // Controls if it uses the nicer UI or not.
 const OPT_SORT_ORDER = "DESC"; // Valid options are ASC or DESC
 const OPT_LOCKING = true; // Enables the locking feature
-
-/**
-* Settings
-**/
-const GRADUATE_LEVEL = 40; // Level pets graduate from training
 
 /**
 * Badges
@@ -55,14 +51,52 @@ const BADGE_GRADUATE = 'https://images.neopets.com/items/clo_grad_vanda_hat.gif'
 const SCHOOL_SETTINGS = new Map();
 const SCHOOL_SWASHBUCKLING = "swashbuckling";
 SCHOOL_SETTINGS.set(SCHOOL_SWASHBUCKLING, {
+    schoolName: SCHOOL_SWASHBUCKLING,
+    url: "pirates/academy.phtml",
+    graduateLevel: 40,
     tiers: [
         { cost: "Graduated!", image: BADGE_GRADUATE},
         { cost: "Five Dubloon Coin", image: 'https://images.neopets.com/items/dubloon3.gif', maxLevel: 40},
         { cost: "Five Dubloon Coin", image: 'https://images.neopets.com/items/dubloon3.gif', maxLevel: 30},
         { cost: "Two Dubloon Coin", image: 'https://images.neopets.com/items/dubloon2.gif', maxLevel: 20},
         { cost: "One Dubloon Coin", image: 'https://images.neopets.com/items/dubloon1.gif', maxLevel: 10}
-    ]
-    });
+    ],
+    hpMult: 2
+});
+const SCHOOL_ISLAND = "island";
+SCHOOL_SETTINGS.set(SCHOOL_ISLAND, {
+    schoolName: SCHOOL_ISLAND,
+    url: "island/training.phtml",
+    graduateLevel: 250,
+    tiers: [
+        { cost: "Graduated!", image: BADGE_GRADUATE},
+        { cost: "8 Tan Codestones", image: 'https://images.neopets.com/items/codestone5.gif', maxLevel: 250},
+        { cost: "7 Tan Codestones", image: 'https://images.neopets.com/items/codestone2.gif', maxLevel: 200},
+        { cost: "6 Tan Codestones", image: 'https://images.neopets.com/items/codestone3.gif', maxLevel: 150},
+        { cost: "5 Tan Codestones", image: 'https://images.neopets.com/items/codestone4.gif', maxLevel: 120},
+        { cost: "4 Tan Codestones", image: 'https://images.neopets.com/items/codestone6.gif', maxLevel: 100},
+        { cost: "3 Tan Codestones", image: 'https://images.neopets.com/items/codestone7.gif', maxLevel: 80},
+        { cost: "2 Tan Codestones", image: 'https://images.neopets.com/items/codestone8.gif', maxLevel: 40},
+        { cost: "1 Tan Codestone", image: 'https://images.neopets.com/items/codestone1.gif', maxLevel: 20}
+    ],
+    hpMult: 3
+});
+const SCHOOL_NINJA = "ninja";
+SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
+    schoolName: SCHOOL_NINJA,
+    url: "island/fight_training.phtml",
+    graduateLevel: null,
+    tiers: [
+        { cost: "Graduated!", image: BADGE_GRADUATE},
+        { cost: "6 Red Codestones", image: 'https://images.neopets.com/items/codestone16.gif', maxLevel: 750},
+        { cost: "5 Red Codestones", image: 'https://images.neopets.com/items/codestone15.gif', maxLevel: 600},
+        { cost: "4 Red Codestones", image: 'https://images.neopets.com/items/codestone14.gif', maxLevel: 500},
+        { cost: "3 Red Codestones", image: 'https://images.neopets.com/items/codestone13.gif', maxLevel: 400},
+        { cost: "2 Red Codestones", image: 'https://images.neopets.com/items/codestone12.gif', maxLevel: 300},
+        { cost: "1 Red Codestone", image: 'https://images.neopets.com/items/codestone11.gif', maxLevel: 20}
+    ],
+    hpMult: 3
+});
 
 /**
 * Other globals
@@ -83,6 +117,7 @@ if (GM_getValue(PET_STORAGE)){
 * Main
 **/
 setUpClasses();
+const SCHOOL = detectSchool();
 replacePetTableV2(getPets(document));
 
 function replacePetTableV2(petData)
@@ -218,7 +253,7 @@ function getPets(pageHandle) {
             petStats.locked = shouldLockPet(petStats);
 
             // Figure out their badge
-            petStats.badge = determineBadge(SCHOOL_SWASHBUCKLING, petStats);
+            petStats.badge = determineBadge(petStats);
 
             // Push to array
             petStatsMap.set(petName, petStats);
@@ -239,20 +274,22 @@ function shouldLockPet(petStats){
     }
 
     //Lock Graduates
-    if (petStats.level > GRADUATE_LEVEL){
+    if (SCHOOL.graduateLevel && petStats.level > SCHOOL.graduateLevel){
         return true;
     }
 
     return false;
 }
 
-function determineBadge(school, petStats){
-    const schoolSettings = SCHOOL_SETTINGS.get(school);
-    let badge = schoolSettings.tiers[0];
+function determineBadge(petStats){
+    let badge = SCHOOL.tiers[0];
+    if (hasGraduated(petStats)){
+        return badge;
+    }
 
-    for (let i = 1; i < schoolSettings.tiers.length; i++){
-        if (petStats.level < schoolSettings.tiers[i].maxLevel){
-            badge = schoolSettings.tiers[i];
+    for (let i = 1; i < SCHOOL.tiers.length; i++){
+        if (petStats.level < SCHOOL.tiers[i].maxLevel){
+            badge = SCHOOL.tiers[i];
         }
         else {
             return badge;
@@ -375,24 +412,24 @@ function getPetStats(petCell){
     return stats;
 }
 
+/**
+ * Decided to only ever recommend even training, if you want to do something else you won't be blocked unless you've already graduated anyways.
+ * This also means we're ignoring the 3x hp bonus in all schools.
+ */
 function recommendNext(petStats){
-    if (!canTrain(petStats)) {
-        return "NONE";
+    if (!hasGraduated(petStats)){
+        if (highestStat(petStats) === "level"){
+            return "level";
+        }
+    
+        return lowestStat(petStats);
     }
 
-    if (highestStat(petStats) === "level"){
-        return "level";
-    }
-
-    return lowestStat(petStats);
+    return "NONE";
 }
 
-function canTrain(petStats){
-    const graduateStat = GRADUATE_LEVEL * 2;
-    return (petStats.level <= GRADUATE_LEVEL
-            || petStats.hp <= graduateStat
-            || petStats.strength <= graduateStat
-            || petStats.defense <= graduateStat);
+function hasGraduated(petStats){
+    return SCHOOL.graduateLevel && petStats.level > SCHOOL.graduateLevel;
 }
 
 function highestStat(petStats){
@@ -407,17 +444,20 @@ function findOutlier(mode, petStats){
     let outlierKey = "hp";
     let outlierValue = petStats.hp;
     for (const [key, stat] of Object.entries(petStats)) {
-        if (key === "level"){
+        // Endurance and level are uncapped, and level will be decided later
+        if (key === "level" || ((key !== "hp" && stat > 750))){
             continue;
         }
+
         if (mode === "min" ? stat < outlierValue : stat > outlierValue){
             outlierKey = key;
             outlierValue = stat;
         }
     }
 
-    // You always need to level first if the outlier is too big
-    if (petStats.level < outlierValue / 2){
+    // You always need to level first if the outlier is too big, but if it's hp the multiplier is different.
+    if (outlierKey === "hp" && petStats.level < outlierValue / SCHOOL.hpMult 
+        || (outlierKey !== "hp" && petStats.level < outlierValue / 2)){
         outlierKey = "level";
         outlierValue = petStats.level;
     }
@@ -439,6 +479,17 @@ function formatStat(key, petStats){
     else{
         return petStats[key];
     }
+}
+
+function detectSchool(){
+    if (document.URL.includes(SCHOOL_SETTINGS.get(SCHOOL_ISLAND).url)){
+        return SCHOOL_SETTINGS.get(SCHOOL_ISLAND);
+    }
+    else if (document.URL.includes(SCHOOL_SETTINGS.get(SCHOOL_NINJA).url)){
+        return SCHOOL_SETTINGS.get(SCHOOL_NINJA);
+    }
+    
+    return SCHOOL_SETTINGS.get(SCHOOL_SWASHBUCKLING);
 }
 
 function mouseOver(element) {
