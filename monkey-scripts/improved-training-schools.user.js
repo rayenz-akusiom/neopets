@@ -61,7 +61,8 @@ SCHOOL_SETTINGS.set(SCHOOL_SWASHBUCKLING, {
         { cost: "Two Dubloon Coin", image: 'https://images.neopets.com/items/dubloon2.gif', maxLevel: 20},
         { cost: "One Dubloon Coin", image: 'https://images.neopets.com/items/dubloon1.gif', maxLevel: 10}
     ],
-    hpMult: 2
+    hpMult: 2,
+    petTableIndex: 3
 });
 const SCHOOL_ISLAND = "island";
 SCHOOL_SETTINGS.set(SCHOOL_ISLAND, {
@@ -79,7 +80,8 @@ SCHOOL_SETTINGS.set(SCHOOL_ISLAND, {
         { cost: "2 Tan Codestones", image: 'https://images.neopets.com/items/codestone8.gif', maxLevel: 40},
         { cost: "1 Tan Codestone", image: 'https://images.neopets.com/items/codestone1.gif', maxLevel: 20}
     ],
-    hpMult: 3
+    hpMult: 3,
+    petTableIndex: 3
 });
 const SCHOOL_NINJA = "ninja";
 SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
@@ -95,7 +97,8 @@ SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
         { cost: "2 Red Codestones", image: 'https://images.neopets.com/items/codestone12.gif', maxLevel: 300},
         { cost: "1 Red Codestone", image: 'https://images.neopets.com/items/codestone11.gif', maxLevel: 20}
     ],
-    hpMult: 3
+    hpMult: 3,
+    petTableIndex: 5
 });
 
 /**
@@ -118,16 +121,17 @@ if (GM_getValue(PET_STORAGE)){
 **/
 setUpClasses();
 const SCHOOL = detectSchool();
-replacePetTableV2(getPets(document));
+replacePetTable(getPets(document));
 
-function replacePetTableV2(petData)
+function replacePetTable(petData)
 {
     if (!OPT_REPLACE_PET_TABLE){
         return;
     }
 
+    // Of course one of the pages would have extra empty paragraphs...
     let petTable = document.getElementById("content");
-    let containerLocation = petTable.getElementsByTagName("p")[3];
+    let containerLocation = petTable.getElementsByTagName("p")[SCHOOL.petTableIndex];
     containerLocation.innerHTML = "";
 
     let petOuterContainer = document.createElement("div");
@@ -225,7 +229,7 @@ function replacePetTableV2(petData)
         lockCell.classList.add("lock-container");
         lockCell.appendChild(lockButton);
         nameRow.appendChild(lockCell);
-        petContainer.classList.add(petStats.locked ? "locked" : "unlocked");
+        petContainer.classList.add(petStats.locked || hasGraduated(petStats) ? "locked" : "unlocked");
     }
 }
 
@@ -270,11 +274,6 @@ function getPets(pageHandle) {
 function shouldLockPet(petStats){
     // Locked Pets
     if (petStorage.get(petStats.name) && petStorage.get(petStats.name).locked){
-        return true;
-    }
-
-    //Lock Graduates
-    if (SCHOOL.graduateLevel && petStats.level > SCHOOL.graduateLevel){
         return true;
     }
 
@@ -362,13 +361,13 @@ function sortPetMap(mapToSort){
         sortedArray = sortedArray.sort((firstPet, secondPet) => firstPet[1].hsd - secondPet[1].hsd);
     }
 
-    // Suppress locked pets
+    // Suppress locked && graduated pets
     if (OPT_SORT_ORDER == "DESC") {
         let elevatedPets = [];
         let noChangesPets = [];
         let suppressedPets = [];
         for(let pet of sortedArray){
-            if(pet[1].locked) {
+            if(pet[1].locked || hasGraduated(pet[1])) {
                 suppressedPets.push(pet);
             }
             else if (pet[1].petProgress.trim().length > 0)
