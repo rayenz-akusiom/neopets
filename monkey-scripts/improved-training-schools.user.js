@@ -2,7 +2,7 @@
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
 // @namespace    http://tampermonkey.net/
-// @version      2024-04-21-V3
+// @version      2024-04-22
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -53,6 +53,7 @@ const SCHOOL_SWASHBUCKLING = "swashbuckling";
 SCHOOL_SETTINGS.set(SCHOOL_SWASHBUCKLING, {
     schoolName: SCHOOL_SWASHBUCKLING,
     url: "pirates/academy.phtml",
+    courseSubmitUrl: "/pirates/process_academy.phtml",
     graduateLevel: 40,
     tiers: [
         { cost: "Graduated!", image: BADGE_GRADUATE},
@@ -68,6 +69,7 @@ const SCHOOL_ISLAND = "island";
 SCHOOL_SETTINGS.set(SCHOOL_ISLAND, {
     schoolName: SCHOOL_ISLAND,
     url: "island/training.phtml",
+    courseSubmitUrl: "/island/process_training.phtml",
     graduateLevel: 250,
     tiers: [
         { cost: "Graduated!", image: BADGE_GRADUATE},
@@ -87,6 +89,7 @@ const SCHOOL_NINJA = "ninja";
 SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
     schoolName: SCHOOL_NINJA,
     url: "island/fight_training.phtml",
+    courseSubmitUrl: "/island/process_fight_training.phtml",
     graduateLevel: null,
     tiers: [
         { cost: "6 Red Codestones", image: 'https://images.neopets.com/items/codestone16.gif', maxLevel: null},
@@ -315,7 +318,7 @@ function submitCourse(petName, stat){
 
     $.ajax({
         type: "POST",
-        url: "/pirates/process_academy.phtml",
+        url: SCHOOL.courseSubmitUrl,
         data: `type=start&course_type=${stat}&pet_name=${petName}`,
         timeout: 6000,
         success: function(data) {
