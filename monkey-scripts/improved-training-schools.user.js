@@ -2,7 +2,7 @@
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
 // @namespace    http://tampermonkey.net/
-// @version      2024-04-22
+// @version      2024-04-25
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -24,6 +24,7 @@
  * - Badges that show the cost of your course.
  * - Will suggest which stat to train.
  * - Enroll and Pay from the same page
+ * - Pets not training are still happy! Isn't that nice :)
  */
 
 /**
@@ -36,13 +37,14 @@
 * Options
 **/
 const OPT_REPLACE_PET_TABLE = true; // Controls whether or not this script replaces the UI. Break in case of emergency, basically.
-const V2_UI = true; // Controls if it uses the nicer UI or not.
 const OPT_SORT_ORDER = "DESC"; // Valid options are ASC or DESC
 const OPT_LOCKING = true; // Enables the locking feature
 
 /**
-* Badges
+* Other globals
 **/
+const LOCKED_ICON = "&#128274;"
+const UNLOCKED_ICON = "&#128275;"
 const BADGE_GRADUATE = 'https://images.neopets.com/items/clo_grad_vanda_hat.gif';
 
 /**
@@ -62,6 +64,7 @@ SCHOOL_SETTINGS.set(SCHOOL_SWASHBUCKLING, {
         { cost: "Two Dubloon Coin", image: 'https://images.neopets.com/items/dubloon2.gif', maxLevel: 20},
         { cost: "One Dubloon Coin", image: 'https://images.neopets.com/items/dubloon1.gif', maxLevel: 10}
     ],
+    tiersInclusive: true,
     hpMult: 2,
     petTableIndex: 3
 });
@@ -82,6 +85,7 @@ SCHOOL_SETTINGS.set(SCHOOL_ISLAND, {
         { cost: "2 Tan Codestones", image: 'https://images.neopets.com/items/codestone8.gif', maxLevel: 40},
         { cost: "1 Tan Codestone", image: 'https://images.neopets.com/items/codestone1.gif', maxLevel: 20}
     ],
+    tiersInclusive: true,
     hpMult: 3,
     petTableIndex: 3
 });
@@ -99,15 +103,10 @@ SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
         { cost: "2 Red Codestones", image: 'https://images.neopets.com/items/codestone12.gif', maxLevel: 400},
         { cost: "1 Red Codestone", image: 'https://images.neopets.com/items/codestone11.gif', maxLevel: 300}
     ],
+    tiersInclusive: false,
     hpMult: 3,
     petTableIndex: 5
 });
-
-/**
-* Other globals
-**/
-const LOCKED_ICON = "&#128274;"
-const UNLOCKED_ICON = "&#128275;"
 
 /**
 * Monkey Storage
@@ -296,7 +295,8 @@ function determineBadge(petStats){
     }
 
     for (let i = 1; i < SCHOOL.tiers.length; i++){
-        if (petStats.level <= SCHOOL.tiers[i].maxLevel){
+        if (SCHOOL.tiersInclusive ? petStats.level <= SCHOOL.tiers[i].maxLevel : 
+            petStats.level < SCHOOL.tiers[i].maxLevel){
             badge = SCHOOL.tiers[i];
         }
         else {
