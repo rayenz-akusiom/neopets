@@ -2,7 +2,7 @@
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
 // @namespace    http://tampermonkey.net/
-// @version      2024-04-25
+// @version      2024-04-29
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -43,8 +43,8 @@ const OPT_LOCKING = true; // Enables the locking feature
 /**
 * Other globals
 **/
-const LOCKED_ICON = "&#128274;"
-const UNLOCKED_ICON = "&#128275;"
+const LOCKED_IMAGE = "https://images.neopets.com/pin/bank_pin_mgr_35.jpg";
+const UNLOCKED_IMAGE = "https://images.neopets.com/items/gif_key_secret_door.gif";
 const BADGE_GRADUATE = 'https://images.neopets.com/items/clo_grad_vanda_hat.gif';
 
 /**
@@ -152,92 +152,93 @@ function replacePetTable(petData)
         petContainer.classList.add("pet-container");
         petOuterContainer.appendChild(petContainer);
 
-        //Name Row
-        let nameRow = document.createElement("div");
-        nameRow.classList.add( "name-cell" );
-        petContainer.appendChild(nameRow);
-
-        let nameCell = document.createElement("div")
-        nameCell.innerHTML = petStats.petTitle;
-        nameCell.id = `pet-title-${petName}`;
-        nameRow.appendChild(nameCell);
-
-        // Status Row
+        // Status Card
         let statusCell = document.createElement("div");
         petContainer.appendChild(statusCell);
         statusCell.classList.add("status-cell");
         statusCell.innerHTML =
             `
-          <img src="//pets.neopets.com/cpn/${petName}/1/2.png" width="150" height="150" border="0">
           <div class="petStats-stats" id="petStats-container-${petName}">
+            <img src="//pets.neopets.com/cpn/${petName}/1/2.png" width="150" height="150" border="0">
+            <div class="petStats-row" id="name-${petName}">
+                <img class="petStats-icon" id="enroll-lock-${petName}" src="${petStats.locked ? LOCKED_IMAGE : UNLOCKED_IMAGE}"/>
+                <div class="petStats-details" id="enroll-name-${petName}"><b>${petStats.name}</b></div>
+            </div>
             <div class="petStats-row" id="cost-${petName}">
-                <div class="petStats-badge-icon" id="enroll-badge-${petName}"></div>
-                <div class="petStats-details" id="enroll-cost-${petName}"><b>${petStats.badge.cost}</b></div>
+                <img class="petStats-icon" id="enroll-badge-${petName}" src="https://images.neopets.com/themes/h5/basic/images/level-icon.png"/>
+                <div class="petStats-details" id="enroll-cost-${petName}"><b>${petStats.petTitle ? petStats.petTitle : petStats.badge.cost}</b></div>
+            </div>
+            <div class="petStats-row" id="hsd-${petName}">
+                <img class="petStats-icon" id="enroll-hsd-${petName}" src="https://images.neopets.com/items/pot_strengthofaltador.gif"/>
+                <div class="petStats-details" id="enroll-hsd-${petName}"><b>${petStats.hsd}</b> HSD</div>
             </div>
             <div class="petStats-row" id="level-${petName}">
-                <div class="petStats-level-icon"></div>
+                <img class="petStats-icon" src="https://images.neopets.com/themes/h5/basic/images/level-icon.png">
                 <div class="petStats-details" id="enroll-level-${petName}">Lvl : <font color="green"><b>${petStats.level}</b></font></div>
             </div>
             <div class="petStats-row" id="hp-${petName}">
-                <div class="petStats-hp-icon"></div>
+                <img class="petStats-icon" src="https://images.neopets.com/themes/h5/basic/images/health-icon.png"/>
                 <div class="petStats-details" id="enroll-hp-${petName}">Hp : <b>${petStats.hp}</b></div>
             </div>
             <div class="petStats-row" id="strength-${petName}">
-                <div class="petStats-strength-icon"></div>
+                <img class="petStats-icon" src="https://images.neopets.com/themes/h5/basic/images/equip-icon.png"/>
                 <div class="petStats-details" id="enroll-strength-${petName}">Str : <b>${petStats.strength}</b></div>
             </div>
             <div class="petStats-row" id="defence-${petName}">
-                <div class="petStats-defence-icon"></div>
+                <img class="petStats-icon" src="https://images.neopets.com/items/armorednegg.gif"/>
                 <div class="petStats-details" id="enroll-defence-${petName}">Def : <b>${petStats.defence}</b></div>
             </div>
+            <div class="petStats-progress" id="progress-${petName}"/>
           </div>
           `;
 
         // Update the background image for the cost badge
         const badgeIcon = document.getElementById(`enroll-badge-${petName}`);
-        badgeIcon.style.backgroundImage = `url(${petStats.badge.image}`;
+        badgeIcon.src = petStats.badge.image;
 
         // Update the background color for the recommended stat
         formatRecommendedStat(petStats);
 
         // Only set up the enrollment behaviour if there's no progress being reported.
         if (petStats.petProgress.trim().length === 0){
-            let statDivs = [];
+            // Submit
             let levelDiv = document.getElementById(`enroll-level-${petName}`);
             levelDiv.addEventListener("click", function() {submitCourse(petName, "Level")});
-            statDivs.push(levelDiv);
             let healthDiv = document.getElementById(`enroll-hp-${petName}`);
             healthDiv.addEventListener("click", function() {submitCourse(petName, "Endurance")});
-            statDivs.push(healthDiv);
             let strengthDiv = document.getElementById(`enroll-strength-${petName}`);
             strengthDiv.addEventListener("click", function() {submitCourse(petName, "Strength")});
-            statDivs.push(strengthDiv);
             let defenceDiv = document.getElementById(`enroll-defence-${petName}`);
             defenceDiv.addEventListener("click", function() {submitCourse(petName, "Defence")});
-            statDivs.push(defenceDiv);
 
-            for (let statDiv of statDivs){
-                statDiv.onmouseover = function() {mouseOver(statDiv)};
-                statDiv.onmouseout = function() {mouseOut(statDiv)};
-            }
+            // Hover behaviour
+            let levelRow = document.getElementById(`level-${petName}`);
+            levelRow.onmouseover = function() {mouseOver(levelRow)};
+            levelRow.onmouseout = function() {mouseOut(levelRow)};
+            let healthRow = document.getElementById(`hp-${petName}`);
+            healthRow.onmouseover = function() {mouseOver(healthRow)};
+            healthRow.onmouseout = function() {mouseOut(healthRow)};
+            let strengthRow = document.getElementById(`strength-${petName}`);
+            strengthRow.onmouseover = function() {mouseOver(strengthRow)};
+            strengthRow.onmouseout = function() {mouseOut(strengthRow)};
+            let defenceRow = document.getElementById(`defence-${petName}`);
+            defenceRow.onmouseover = function() {mouseOver(defenceRow)};
+            defenceRow.onmouseout = function() {mouseOut(defenceRow)};
         }
 
-        let progressCell = document.createElement("div");
-        petContainer.appendChild(progressCell);
-        progressCell.id = `progressCell-${petName}`;
-        progressCell.classList.add("status-cell");
-        progressCell.inert = petStats.locked;
-        progressCell.innerHTML = petStats.petProgress;
+        // Progress reporting
+        if (petStats.petProgress){
+            let progressContainer = document.getElementById(`progress-${petName}`);
+            progressContainer.id = `progressCell-${petName}`;
+            progressContainer.inert = petStats.locked;
+            progressContainer.innerHTML = petStats.petProgress;
+        }
 
-        // Lock Button
-        let lockButton = document.createElement("button");
-        let lockCell = document.createElement("div");
-        lockButton.innerHTML = getLockIcon(petStats.locked);
-        lockButton.addEventListener("click", function() {togglePetLock(lockButton, petName)});
-        lockCell.classList.add("lock-container");
-        lockCell.appendChild(lockButton);
-        nameRow.appendChild(lockCell);
-        petContainer.classList.add(petStats.locked || hasGraduated(petStats) ? "locked" : "unlocked");
+        // Lock behaviour
+        let lockRow = document.getElementById(`name-${petName}`);
+        lockRow.addEventListener("click", function() {togglePetLock(petName)});
+        lockRow.onmouseover = function() {mouseOver(lockRow)};
+        lockRow.onmouseout = function() {mouseOut(lockRow)};
     }
 }
 
@@ -251,6 +252,7 @@ function getPets(pageHandle) {
             let petTitle = row.cells[0].innerHTML;
             let petName = petTitle.substring(3).split(" ")[0];
             let nextRow = petTable.rows[i+1];
+
             // Get Pet Stats from next row
             let petStats = getPetStats(nextRow.cells[0]);
 
@@ -325,7 +327,7 @@ function submitCourse(petName, stat){
             let dataWrapper = document.createElement("div");
             dataWrapper.innerHTML = data;
             let petData = getPets(dataWrapper);
-            let progessCellToUpdate = document.getElementById(`progressCell-${petName}`);
+            let progessCellToUpdate = document.getElementById(`progress-${petName}`);
             progessCellToUpdate.innerHTML = petData.get(petName).petProgress;
             let nameCellToUpdate = document.getElementById(`pet-title-${petName}`);
             nameCellToUpdate.innerHTML = petData.get(petName).petTitle;
@@ -336,22 +338,23 @@ function submitCourse(petName, stat){
     })
 }
 
-function togglePetLock(lockButton, petName){
+function togglePetLock(petName){
     let petStats = petStorage.get(petName);
     petStats.locked = !petStats.locked;
     petStorage.set(petName, petStats);
     storeMonkeyMap(PET_STORAGE, petStorage);
 
     // Change the lock button
-    lockButton.innerHTML = getLockIcon(petStats.locked);
+    let lockImage = document.getElementById(`enroll-lock-${petName}`);
+    lockImage.src = getLockIcon(petStats.locked);
 
     // Update the treatment for the petContainer
     const petContainer = document.getElementById(`petContainer-${petName}`);
     petContainer.classList.add(petStats.locked ? "locked" : "unlocked");
     petContainer.classList.remove(petStats.locked ? "unlocked" : "locked");
 
-    // Progress Cell needs to change inertness (can't do this at container level because of the lock button)
-    const progressCell = document.getElementById(`progressCell-${petName}`);
+    // Progress Cell needs to change inertness
+    const progressCell = document.getElementById(`progress-${petName}`);
     progressCell.inert = petStats.locked;
 }
 
@@ -396,10 +399,15 @@ function sortPetMap(mapToSort){
 
 function reformatPetTitle(petStats, petTitle){
     let petTitleTokens = petTitle.split(" ");
-    petTitleTokens.splice(1, 2, `(<b>${petStats.hsd} HSD)</b>`);
-    let reformattedTitle = petTitleTokens.join(' ').trim();
 
-    return reformattedTitle;
+    // 0. petName 1. (Level 2. number) 3. is 4. currently 5. studying 6. course
+    if (petTitleTokens.length === 7){
+        petTitleTokens = petTitleTokens.slice(5);
+        return capitalizeFirstLetter(petTitleTokens.join(' ').trim());
+    }
+    else {
+        return "";
+    }
 }
 
 function getPetStats(petCell){
@@ -508,35 +516,32 @@ function mouseOut(element) {
     element.classList.remove("stat-hover");
 }
 
+function getLockIcon(locked){
+    return locked ? LOCKED_IMAGE : UNLOCKED_IMAGE;
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 function setUpClasses(){
     let styleTag = document.getElementsByTagName("style")[0];
     styleTag.innerHTML += " .locked { background-color: #efefef; } ";
     styleTag.innerHTML += " .unlocked { background-color: white; } ";
     styleTag.innerHTML +=
-        ` .training-outer-container {
-           display: block;
-           width: 500;
+    ` .training-outer-container {
+           display: grid;
+           grid-template-columns: auto auto;
+           width: 800;
            margin: auto;
            padding: 0;
       }
       .pet-container {
            display: grid;
-           grid-template-columns: repeat(2, 50%);
-           grid-gap: 0;
+           width: 350;
            margin: 0;
            padding: 0;
            align-items: center;
-           grid-template-rows: 1fr min-content;
-      }
-      .name-cell {
-         background-color: #efefef;
-         text-align: left;
-         grid-column: span 2;
-         padding: 3px;
-         justify-items: left;
-         align-items: center;
-         display: grid;
-         grid-template-columns: auto min-content;
       }
       .status-cell {
          text-align: center;
@@ -547,20 +552,21 @@ function setUpClasses(){
         text-align: right;
         padding: 3px;
       }
-      .stat-hover {
-       color: red;
+      .stat-hover{
+       border: 3px solid #A9A9A9;
+       background-color: #E6E4DD !important;
       }
-      .petStats-hp-icon {
-        background-image: url(https://images.neopets.com/themes/h5/basic/images/health-icon.png);
+      .stat-hover img{
+       border: 3px solid #A9A9A9;
       }
-      .petStats-defence-icon {
-        background-image: url(https://images.neopets.com/items/armorednegg.gif);
-      }
-      .petStats-strength-icon {
-        background-image: url(https://images.neopets.com/themes/h5/basic/images/equip-icon.png);
-      }
-      .petStats-level-icon {
-        background-image: url(https://images.neopets.com/themes/h5/basic/images/level-icon.png);
+      .petStats-icon {
+        float: left;
+        width: 25px;
+        height: 25px;
+        border: 3px solid #DFC5FE;
+        background-color: white;
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(0, 0, 0, .8);
       }
       .petStats-details {
         padding-top: 7px;
@@ -578,11 +584,11 @@ function setUpClasses(){
         display: block
       }
       .petStats-row {
-        margin: 3px auto 3px;
+        margin: 5px auto 5px;
         width: 90%;
         height: 30px;
         border-radius: 15px;
-        box-sizing: border-box;
+        box-sizing: content-box;
         display: grid;
         grid-template-columns: auto 90%;
         grid-gap: 3px;
@@ -590,23 +596,18 @@ function setUpClasses(){
         text-align: left;
         background-color: white;
       }
-      .petStats-hp-icon, .petStats-strength-icon, .petStats-level-icon, .petStats-defence-icon, .petStats-badge-icon {
-        height: 30px;
-        width: 30px;
-        border-radius: 50%;
-        border: 3px solid #DFC5FE;
+      .petStats-progress {
+        margin: 5px auto 5px;
+        width: 90%;
+        height: auto;
+        border-radius: 15px;
+        box-sizing: content-box;
+        grid-gap: 3px;
         background-color: white;
-        background-position: center;
-        background-size: 90%;
-        background-repeat: no-repeat;
       }
       .recommended-stat{
         background-color: #90EE90
       }
       `
     ;
-}
-
-function getLockIcon(locked){
-    return locked ? LOCKED_ICON : UNLOCKED_ICON;
 }
