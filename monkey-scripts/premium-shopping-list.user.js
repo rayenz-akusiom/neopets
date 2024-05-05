@@ -70,7 +70,7 @@ function insertCategory(items, category) {
 function insertItem(item) {
     const categoryDiv = document.getElementById(`rayenz-sl-category-${item.category}`);
     const itemElements = formatItem(item);
-    categoryDiv.innerHTML += itemElements;
+    categoryDiv.appendChild(itemElements);
 
     // Wire item icon for SSW
     // TODO: Normal Wiz links for the ones that don't work that way.
@@ -115,13 +115,15 @@ function addItem() {
 }
 
 function formatItem(item) {
-    return `
-        <div class="rayenz-sl-grid-item">
-            <img id="rayenz-sl-item-${item.id}" class="rayenz-sl-item" src="${item.url}">
-            <p class="rayenz-sl-item-name">${item.name}</p>
-            <p class="rayenz-sl-item-name">(${item.target})</p>
-        </div>
-    `
+    const gridItem = document.createElement("div");
+    gridItem.classList.add("rayenz-sl-grid-item");
+    gridItem.innerHTML = `
+        <img id="rayenz-sl-item-${item.id}" class="rayenz-sl-item" src="${item.url}">
+        <p class="rayenz-sl-item-name">${item.name}</p>
+        <p class="rayenz-sl-item-name">(${item.target})</p>
+    `;
+
+    return gridItem;
 }
 
 function saveShoppingList() {
@@ -196,7 +198,7 @@ function setUpCollapsibles() {
 function toggleVisibility(element, type) {
     element.classList.toggle("rayenz-sl-active");
     var content = element.nextElementSibling;
-    if (content.style.display !== "none") {
+    if (content.style.display && content.style.display !== "none") {
         content.style.display = "none";
     } else {
         content.style.display = type;
