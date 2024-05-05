@@ -74,8 +74,13 @@ function insertItem(item) {
 
     // Wire item icon for SSW
     // TODO: Normal Wiz links for the ones that don't work that way.
-    const sswIcon = document.getElementById(`rayenz-sl-item-${item.id}`);
-    sswIcon.addEventListener("click", function () { sswopen(item.name) });
+    if (item.ssw) {
+        const itemIcon = document.getElementById(`rayenz-sl-item-${item.id}`);
+        itemIcon.addEventListener("click", function () { openSearch(item.name, item.ssw) });
+    }
+    else {
+        $(`#rayenz-sl-item-${item.id}`).wrap(`<a target="_blank" href='https://www.neopets.com/shops/wizard.phtml?string=${item.name}'></a>`);
+    }
 }
 
 function addItem() {
@@ -140,7 +145,7 @@ function kebabify(rawString) {
 }
 
 // Cribbed from Dice's Search Helper
-function sswopen(item) {
+function openSearch(item) {
     // open this in such a way that if the "__2020" was changed/removed without warning, this will still work
     // TODO: hardcode the class name better once out of beta
     $("[class^='ssw-header']").last().parent().show();
