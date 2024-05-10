@@ -10,7 +10,15 @@
 // ==/UserScript==
 
 /**
- * 
+ * Ideas / things to fix:
+ * - Category adding doesn't work right
+ * - Replace shop wiz checkbox with checking the item name
+ * - Put the item names in the items so that I can jquery add them
+ * - Sorting / Rearranging?
+ * - Deleting
+ * - Editing?
+ * - Category dropdown?
+ * - target commas
  */
 
 /**
@@ -72,8 +80,6 @@ function insertItem(item) {
     const itemElements = formatItem(item);
     categoryDiv.appendChild(itemElements);
 
-    // Wire item icon for SSW
-    // TODO: Normal Wiz links for the ones that don't work that way.
     if (item.ssw) {
         const itemIcon = document.getElementById(`rayenz-sl-item-${item.id}`);
         itemIcon.addEventListener("click", function () { openSearch(item.name, item.ssw) });
@@ -102,7 +108,6 @@ function addItem() {
     // Reset "form"
     name.value = "";
     url.value = "";
-    category.value = "";
     target.value = "";
     sswChecked.checked = true;
 
