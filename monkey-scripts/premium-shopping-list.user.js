@@ -80,7 +80,7 @@ function insertItem(item) {
     const itemElements = formatItem(item);
     categoryDiv.appendChild(itemElements);
 
-    if (item.ssw) {
+    if (!sswlimited(item.name)) {
         const itemIcon = document.getElementById(`rayenz-sl-item-${item.id}`);
         itemIcon.addEventListener("click", function () { openSearch(item.name, item.ssw) });
     }
@@ -94,7 +94,6 @@ function addItem() {
     const url = document.getElementById("imgurl");
     const category = document.getElementById("icategory");
     const target = document.getElementById("itarget");
-    const sswChecked = document.getElementById("issw");
 
     let addedItem = {
         name: name.value,
@@ -102,16 +101,14 @@ function addItem() {
         url: url.value,
         category: category.value,
         target: target.value,
-        ssw: sswChecked.checked
     };
 
     // Reset "form"
     name.value = "";
     url.value = "";
     target.value = "";
-    sswChecked.checked = true;
 
-    // Add to shopping storagea
+    // Add to shopping storage
     const listCategory = shoppingStorage.get(addedItem.category);
     if (listCategory) {
         listCategory.push(addedItem);
@@ -119,6 +116,8 @@ function addItem() {
     else {
         shoppingStorage.set(addedItem.category, [addedItem]);
     }
+
+    sortShoppingList();
     saveShoppingList();
 
     insertItem(addedItem);
@@ -130,10 +129,34 @@ function formatItem(item) {
     gridItem.innerHTML = `
         <img id="rayenz-sl-item-${item.id}" class="rayenz-sl-item" src="${item.url}">
         <p class="rayenz-sl-item-name">${item.name}</p>
-        <p class="rayenz-sl-item-name">(${item.target})</p>
+        <p class="rayenz-sl-item-name">(${Number(item.target).toLocaleString()})</p>
     `;
 
     return gridItem;
+}
+
+function sortShoppingList(){
+    for (let [category, list] of shoppingStorage){
+        let sortedCategory = Array.from(list);
+
+        // Sort by name first
+        sortedCategory = sortedCategory.sort((firstItem, secondItem) => {return ('' + firstItem.name).localeCompare(secondItem.name)});
+
+        // Put SSW-able items first
+        let sswItems = [];
+        let wizItems = [];
+        for(let item of sortedCategory){
+            if(sswlimited(item.name)) {
+                wizItems.push(item);
+            }
+            else {
+                sswItems.push(item);
+            }
+        }
+
+        sortedCategory = sswItems.concat(wizItems);
+        shoppingStorage.set(category, sortedCategory);
+    }
 }
 
 function saveShoppingList() {
@@ -147,6 +170,11 @@ function storeMonkeyMap(key, mapToStore) {
 function kebabify(rawString) {
     const tokens = rawString.toLowerCase().split(" ");
     return tokens.join("-");
+}
+
+// Cribbed from Dice's Search Helper
+function sswlimited(itemName) {
+    return (/Nerkmid($|.X+$)/.test(itemName) || itemName.endsWith("Paint Brush") || itemName.endsWith("Transmogrification Potion") || itemName.endsWith("Laboratory Map"));
 }
 
 // Cribbed from Dice's Search Helper
@@ -183,8 +211,6 @@ function blankShoppingList() {
                 <input type="text" id="icategory" name="icategory"><br><br>
                 <label for="itarget">Target Buying point</label>
                 <input type="text" id="itarget" name="itarget"><br><br>
-                <label for="itarget">Can SSW?</label>
-                <input type="checkbox" checked="true" id="issw" name="issw"><br><br>
                 <button type="button" id="rayenz-sl-adder-submit">Add</button>
             </div>
         </div>

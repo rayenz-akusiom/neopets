@@ -1,7 +1,6 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @namespace    http://tampermonkey.net/
 // @version      2024-04-29
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
