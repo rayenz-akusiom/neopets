@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Quick Stock At Top
+// @name         Quick Stock At Top <Rayenz>
 // @namespace    http://tampermonkey.net/
 // @version      2024-05-10
 // @description  Add quick stock buttons at the top of the page.

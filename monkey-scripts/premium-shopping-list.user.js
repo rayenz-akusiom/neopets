@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         Premium Shopping List <Rayenz>
 // @description  Keep track of shopping list **Tested in Chrome only!**
-// @version      2024-05-04
+// @version      2024-05-24
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/premium/
+// @match        *://*.neopets.com/safetydeposit.phtml*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=neopets.com
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -14,11 +15,10 @@
  * - Category adding doesn't work right
  * - Replace shop wiz checkbox with checking the item name
  * - Put the item names in the items so that I can jquery add them
- * - Sorting / Rearranging?
  * - Deleting
  * - Editing?
  * - Category dropdown?
- * - target commas
+ * - SDB capture
  */
 
 /**
@@ -32,10 +32,19 @@ if (GM_getValue(SHOPPING_STORAGE)) {
 
 // "Main"
 setUpClasses();
-initializeShoppingList();
-importShoppingList();
-setUpCollapsibles();
 
+if (document.URL.includes("premium")) {
+    initializeShoppingList();
+    importShoppingList();
+    setUpCollapsibles();
+}
+else if (document.URL.includes("safetydeposit")){
+    captureSDBCounts();
+}
+
+/***
+ *  Shopping List Function
+ */
 function initializeShoppingList() {
     const sswBar = document.getElementsByClassName("pp-ssw__2020")[0];
     const shoppingListContainer = document.createElement("div");
@@ -130,6 +139,7 @@ function formatItem(item) {
         <img id="rayenz-sl-item-${item.id}" class="rayenz-sl-item" src="${item.url}">
         <p class="rayenz-sl-item-name">${item.name}</p>
         <p class="rayenz-sl-item-name">(${Number(item.target).toLocaleString()})</p>
+        <p class="rayenz-sl-item-name">${sdbLink(item.name)}: ${item.sdbQty ? item.sdbQty : "?"}
     `;
 
     return gridItem;
@@ -163,6 +173,51 @@ function saveShoppingList() {
     storeMonkeyMap(SHOPPING_STORAGE, shoppingStorage);
 }
 
+/**
+ * Safety Deposit Functions
+ */
+function captureSDBCounts(){
+    let sdbElems = $(`#content > table > tbody > tr > td.content > form > table:nth-child(3) > tbody > tr`);
+
+    if (!sdbElems){
+        return;
+    }
+    
+    //Discard wrapping rows
+    let sdbRows = jQuery.makeArray( sdbElems );
+    sdbRows.shift();
+    sdbRows.pop();
+
+    // Get Item Quantities
+    const qtyMap = new Map();
+
+    sdbRows.forEach(item => {
+        let itemCells = item.getElementsByTagName("td");
+        let itemName = itemCells[1].getElementsByTagName("b")[0].innerText.split("\n")[0];
+        let itemQty = itemCells[4].getElementsByTagName("b")[0].innerText;
+
+        qtyMap.set(itemName, itemQty);
+    });
+
+    updateItemQuantities(qtyMap);
+}
+
+function updateItemQuantities(qtyMap){
+    shoppingStorage.forEach((category) => {
+        category.forEach((item) => {
+            if (qtyMap.get(item.name)){
+                item.sdbQty = qtyMap.get(item.name);
+            }
+        })
+    });
+
+    saveShoppingList();
+}
+
+/**
+ * Utility Functions
+ */
+
 function storeMonkeyMap(key, mapToStore) {
     GM_setValue(key, JSON.stringify(Array.from(mapToStore.entries())));
 }
@@ -188,6 +243,14 @@ function openSearch(item) {
 
     $("#ssw-criteria").val("exact");
     $("#searchstr").val(item);
+}
+
+// Cribbed from Dice's Search Helper
+function sdbLink(itemName) {
+    let url = `https://www.neopets.com/safetydeposit.phtml?obj_name=${itemName}&category=0`;
+    let img = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAECklEQVRYhe1WS08jRxD+qj2PHQ8gbLB5SgaBQKDkyokDXPIbOOcX5RJFSi45RcovyCESIocoOawQSHhxQDwMEg/j4CEz4/FO90zlwIzXsMbrELTaw35SH2ZUVd/XVdVdDXzGZ3yKIKKPxwUAlmVNFAqFNcMwviwUChfZbPZ8b2/vLTP/PTg4eCuE8E9OTlgpxQDeAmgBYAB6EkcCiADESUzu4NASO5H8l8nitoCZmZmv19fXf3AcR0xNTcUDAwOy1WqBmZtE9I+U0t/Z2ckwc2wYhgOgngTIJiR+IirqEMAJ6SsANgADgALgE5F/c3PzZ7lc/lYTQmB6enpI3AOGYYhsNmtalgUAJoAcEWF2dhZhGMJ1Xei6DsMwwNy50f4QBAFM04RlWROVSuVHjYig67qdGjBze6WI4xhSSjSbTRQKBTSbTRSLRdi23ZWkG+I4xvX1NUzThFIKvu8PEVFWS0j1pxyFEDg6OsLW1haICBsbG1heXka5XEYURdD1J10fwPM85PN5LCwsYHt7G47jCACkJTsNezm7rotarYZMJgOlFEZHR5HP53F4eAjbtj9YCqUUTNPEysoKhBCpvQYgozEzWq2WSo9eFEXvBZBSPiBhZmQyGQwPD2NwcPCDAlJ/ImqXN5vNGpOTk5rGzFBKRUTUNngKhmHAMIwHQh73Szc8tmFmWJYlJicnNQ0AiOjJQjIz5ufnsbq6CiJCsVh8Vvd3gWDmjJZ85HsJyOVyKJVKcF0XQoiXIG8LSKMN9bLsTHUcx/+bOSl1JggCU+D+5tL6cSKirk36TBhRFL1KM9Azr8lJQRAEL0UOABkARkr85PgTQqBarWJzcxPlcrndgGlG/svqIkBPU99z/jqOg0ajAeDdPSGlhOd5iOO4r4tICIEoiqBp7WoLAFpfAjoDKaXQaDQwMTGBpaWlvt8OjUYDR0dHKJVKqQ8BoFRAz9bWNA1DQ0PI5XJoNBoYGRnB3Nxc33MAAEqlEqrVKvb39+G6bjsTGgAKw9BMd/L4mDEzSqUS1tbWwMw4PT2FlBKVSqVv8hREhHq9DsdxMD4+HgNQqQArbZRuAgYGBmBZFoiIdV2PPc9rF11KSVEUpd9xstLXkcL9oAuT7wwR2SMjI7bnebdhGNbTEnTtIiJCEAS4u7ur6rr+i+/7f4Rh6CYEDAC7u7u4uLgAEXHyX3WsEO9eSwr3T7McgGFmdqWU+10vICKCUgp3d3e1s7Ozn46Pj78/PT39y/O893qln2HUC10FuK7bvLy8/LVSqXxzfHz8++3trXw2Qz8CmJnDMIRSimu12ptarfbd69evfz4/P6+/xN3fCwSAbNv+amxs7IvFxcXg4ODgt6urqze+77/IzO0byYv4o3J+EvgX4yIhYBP/dWUAAAAASUVORK5CYII=";
+
+    return `<a tabindex='-1' target='_blank' href='${url}'><img src='${img}' class='rayenz-sl-searchimg'></a>`;
 }
 
 function blankShoppingList() {
@@ -284,7 +347,7 @@ function setUpClasses() {
     .rayenz-sl-category {
         display: grid;
         grid-template-columns: 120px 120px 120px 120px 120px 120px;
-        grid-template-rows: 175px;
+        grid-template-rows: 200px;
         column-gap: 10px;
         row-gap: 10px;
         width: 862px;
@@ -304,6 +367,11 @@ function setUpClasses() {
         height: 80px;
         margin-left: 20px;
         margin-right: 20px;
+    }
+    .rayenz-sl-searchimg {
+        cursor: pointer;
+        height: 20px !important;
+        width: 20px !important;
     }
     .rayenz-sl-item-name {
         font-family: MuseoSansRounded500, Arial, sans-serif;
