@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Premium Shopping List <Rayenz>
 // @description  Keep track of shopping list **Tested in Chrome only!**
-// @version      2024-05-24
+// @version      2024-06-18
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/premium/
 // @match        *://*.neopets.com/safetydeposit.phtml*
@@ -20,6 +20,11 @@
  * - Category dropdown?
  * - SDB capture
  */
+
+/**
+ * Globals
+ */
+let ITEM_COUNT = 0;
 
 /**
 * Monkey Storage
@@ -85,17 +90,23 @@ function insertCategory(items, category) {
 }
 
 function insertItem(item) {
+    ITEM_COUNT++;
     const categoryDiv = document.getElementById(`rayenz-sl-category-${item.category}`);
     const itemElements = formatItem(item);
+    const uid = ITEM_COUNT;
     categoryDiv.appendChild(itemElements);
 
     if (!sswlimited(item.name)) {
-        const itemIcon = document.getElementById(`rayenz-sl-item-${item.id}`);
+        const itemIcon = document.getElementById(`rayenz-sl-item-${item.id}-${uid}`);
         itemIcon.addEventListener("click", function () { openSearch(item.name, item.ssw) });
     }
     else {
-        $(`#rayenz-sl-item-${item.id}`).wrap(`<a target="_blank" href='https://www.neopets.com/shops/wizard.phtml?string=${item.name}'></a>`);
+        $(`#rayenz-sl-item-${item.id}-${uid}`).wrap(`<a target="_blank" href='https://www.neopets.com/shops/wizard.phtml?string=${item.name}'></a>`);
     }
+
+    // Delete operation
+    const deleteButton = document.getElementById(`rayenz-sl-item-${item.id}-${uid}-delete`);
+    deleteButton.addEventListener("click", function () { deleteItem(item.category, item.id, uid) });
 }
 
 function addItem() {
@@ -136,10 +147,11 @@ function formatItem(item) {
     const gridItem = document.createElement("div");
     gridItem.classList.add("rayenz-sl-grid-item");
     gridItem.innerHTML = `
-        <img id="rayenz-sl-item-${item.id}" class="rayenz-sl-item" src="${item.url}">
+        <img id="rayenz-sl-item-${item.id}-${ITEM_COUNT}" class="rayenz-sl-item" src="${item.url}">
         <p class="rayenz-sl-item-name">${item.name}</p>
         <p class="rayenz-sl-item-name">(${Number(item.target).toLocaleString()})</p>
         <p class="rayenz-sl-item-name">${sdbLink(item.name)}: ${item.sdbQty ? item.sdbQty : "?"}
+        <p class="rayenz-sl-item-name" id="rayenz-sl-item-${item.id}-${ITEM_COUNT}-delete" >DELETE</p>
     `;
 
     return gridItem;
@@ -171,6 +183,27 @@ function sortShoppingList(){
 
 function saveShoppingList() {
     storeMonkeyMap(SHOPPING_STORAGE, shoppingStorage);
+}
+
+function deleteItem(category, idToRemove, uid){
+    //Remove from storage
+    let categoryItems = shoppingStorage.get(category);
+
+    if (categoryItems.length === 0){
+        shoppingStorage.delete(category);
+    }
+    else {
+        categoryItems = categoryItems.filter(function(item) {
+            return item.id != idToRemove;
+        });
+        shoppingStorage.set(category, categoryItems);
+    }
+
+    //Remove HTML elements
+    $(`#rayenz-sl-item-${idToRemove}-${uid}`).parent().remove();
+
+    // Update storage
+    saveShoppingList();
 }
 
 /**

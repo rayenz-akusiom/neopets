@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2024-04-29
+// @version      2025-04-26
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -18,12 +18,13 @@
  * - HSD Replaces Level in Pet Titles
  * - Order by HSD (default DESC)
  * - Added lock functionality to prevent accidental interaction with "finished" pets
- * - Pushes Graduates (overleveled) and manually locked pets to bottom of list
+ * - Pushes Graduates (overleveled) and manually locked pets to bottom of list (Now graduates if overstatted as well)
  * - Pushes pets awaiting payment, have training in process or have completed training to the top of the list
  * - Badges that show the cost of your course.
  * - Will suggest which stat to train.
  * - Enroll and Pay from the same page
  * - Pets not training are still happy! Isn't that nice :)
+ * - Recommends next stat based on an even leveling strategy, respecting boost maxes.
  */
 
 /**
@@ -121,13 +122,22 @@ if (GM_getValue(PET_STORAGE)){
 **/
 const SCHOOL = detectSchool();
 setUpClasses();
+main();
 
-if (document.readyState !== 'loading') {
-    replacePetTable(getPets(document));
-    return;
-  }
-  else {
-    document.addEventListener('DOMContentLoaded', replacePetTable(getPets(document)));
+function main(){
+    try{
+        if (document.readyState !== 'loading') {
+            replacePetTable(getPets(document));
+            return;
+        }
+        else {
+            document.addEventListener('DOMContentLoaded', replacePetTable(getPets(document)));
+        }
+    }
+    catch (error){
+        console.log(error);
+        createRetryButton();
+    }
 }
 
 function replacePetTable(petData)
@@ -227,10 +237,7 @@ function replacePetTable(petData)
 
         // Progress reporting
         if (petStats.petProgress){
-            let progressContainer = document.getElementById(`progress-${petName}`);
-            progressContainer.id = `progressCell-${petName}`;
-            progressContainer.inert = petStats.locked;
-            progressContainer.innerHTML = petStats.petProgress;
+            updateProgressCell(petStats);
         }
 
         // Lock behaviour
@@ -241,8 +248,17 @@ function replacePetTable(petData)
     }
 }
 
+function createRetryButton(){
+    const mainTable = $("#content > table > tbody > tr > td.content");
+    const retryButton = document.createElement("button");
+    retryButton.appendChild(document.createTextNode("Reload"));
+    retryButton.addEventListener("click", function () { main() });
+    mainTable.append(retryButton);
+}
+
 function getPets(pageHandle) {
-    let petTable = pageHandle.getElementsByTagName("table")[8];
+    const content = document.getElementsByClassName('content')[0];
+    let petTable = [...content.getElementsByTagName('table')].filter(tbl => tbl.width == '500')[0];
     let petStatsMap = new Map();
     for (var i = 0; i < petTable.rows.length; i++) {
         let row = petTable.rows[i];
@@ -429,7 +445,7 @@ function getPetStats(petCell){
 
 /**
  * Decided to only ever recommend even training, if you want to do something else you won't be blocked unless you've already graduated anyways.
- * This also means we're ignoring the 3x hp bonus in all schools.
+ * This also means we're ignoring the 3x hp bonus in all schools except Ninja.
  */
 function recommendNext(petStats){
     if (!hasGraduated(petStats)){
@@ -437,14 +453,28 @@ function recommendNext(petStats){
             return "level";
         }
     
-        return lowestStat(petStats);
+        const recommendedStat = lowestStat(petStats);
+
+        // Check that lowest stat is actually trainable. If not, recommend level.
+        if (recommendedStat !== "hp" && petStats.hp > petStats.level * 2){
+            return "level";
+        }
+        else {
+            return recommendedStat;
+        }
     }
 
     return "NONE";
 }
 
 function hasGraduated(petStats){
-    return SCHOOL.graduateLevel && petStats.level > SCHOOL.graduateLevel;
+    // Has Graduated if any of their stats exceed trainability in the school.
+    return (SCHOOL.graduateLevel && (
+        petStats.level > SCHOOL.graduateLevel
+        || petStats.hp > SCHOOL.hpMult * SCHOOL.graduateLevel
+        || petStats.defence > SCHOOL.graduateLevel * 2
+        || petStats.strength > SCHOOL.graduateLevel * 2)
+    );
 }
 
 function highestStat(petStats){
@@ -460,7 +490,7 @@ function findOutlier(mode, petStats){
     let outlierValue = petStats.hp;
     for (const [key, stat] of Object.entries(petStats)) {
         // Endurance and level are uncapped, and level will be decided later
-        if (key === "level" || ((key !== "hp" && stat > 750))){
+        if (key === "level" || ((key !== "hp" && stat > 850))){
             continue;
         }
 
@@ -521,6 +551,42 @@ function getLockIcon(locked){
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function updateProgressCell(petStats, progressUpdate){
+    let progressContainer = document.getElementById(`progress-${petStats.name}`);
+    progressContainer.inert = petStats.locked;
+    progressContainer.innerHTML = progressUpdate || "";
+
+    if (progressUpdate){
+        return;
+    }
+
+    if (petStats.petProgress.includes('Course Finished!')){
+        const completeCourseBtn = document.createElement('button');
+        completeCourseBtn.innerText = 'Complete Course!';
+        completeCourseBtn.onclick = () => {
+            processCourse(petStats.name, 'complete').then(txt => updateProgressCell(petStats, txt));
+        };
+        progressContainer.appendChild(completeCourseBtn);
+    }
+    else {
+        progressContainer.innerHTML = petStats.petProgress;
+    }
+}
+
+// Options are 'pay', 'cancel', and 'complete'
+async function processCourse(petName, option) {
+    const url = `process_${location.pathname.split('/').pop()}?type=${option}&pet_name=${petName}`;
+
+    try {
+        const response = await fetch(url);
+
+        return response.text();
+    } catch (error) {
+        console.error(error.message);
+        return error;
+    }
 }
 
 function setUpClasses(){
