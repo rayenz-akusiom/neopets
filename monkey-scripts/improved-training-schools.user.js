@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2025-04-26
+// @version      2026-05-11
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -54,7 +54,7 @@ const SCHOOL_SETTINGS = new Map();
 const SCHOOL_SWASHBUCKLING = "swashbuckling";
 SCHOOL_SETTINGS.set(SCHOOL_SWASHBUCKLING, {
     schoolName: SCHOOL_SWASHBUCKLING,
-    url: "pirates/academy.phtml",
+    url: "/pirates/academy.phtml",
     courseSubmitUrl: "/pirates/process_academy.phtml",
     graduateLevel: 40,
     tiers: [
@@ -71,7 +71,7 @@ SCHOOL_SETTINGS.set(SCHOOL_SWASHBUCKLING, {
 const SCHOOL_ISLAND = "island";
 SCHOOL_SETTINGS.set(SCHOOL_ISLAND, {
     schoolName: SCHOOL_ISLAND,
-    url: "island/training.phtml",
+    url: "/island/training.phtml",
     courseSubmitUrl: "/island/process_training.phtml",
     graduateLevel: 250,
     tiers: [
@@ -92,7 +92,7 @@ SCHOOL_SETTINGS.set(SCHOOL_ISLAND, {
 const SCHOOL_NINJA = "ninja";
 SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
     schoolName: SCHOOL_NINJA,
-    url: "island/fight_training.phtml",
+    url: "/island/fight_training.phtml",
     courseSubmitUrl: "/island/process_fight_training.phtml",
     graduateLevel: null,
     tiers: [
@@ -257,7 +257,7 @@ function createRetryButton(){
 }
 
 function getPets(pageHandle) {
-    const content = document.getElementsByClassName('content')[0];
+    const content = pageHandle.getElementsByClassName('content')[0];
     let petTable = [...content.getElementsByTagName('table')].filter(tbl => tbl.width == '500')[0];
     let petStatsMap = new Map();
     for (var i = 0; i < petTable.rows.length; i++) {
@@ -337,6 +337,21 @@ function submitCourse(petName, stat){
         type: "POST",
         url: SCHOOL.courseSubmitUrl,
         data: `type=start&course_type=${stat}&pet_name=${petName}`,
+        timeout: 6000,
+        success: function(data) {
+            refreshPetData(petName);
+        },
+        error: function(xhr, status, error) {
+            console.log(status + error)
+        }
+    })
+}
+
+function refreshPetData(petName){
+    $.ajax({
+        type: "POST",
+        url: SCHOOL.url,
+        data: `type=status`,
         timeout: 6000,
         success: function(data) {
             let dataWrapper = document.createElement("div");
