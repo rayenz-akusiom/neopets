@@ -31,6 +31,7 @@
 * Ideas:
 * Reverseable Sort? - Done as an Option, button for later.
 * Make nicer to look at (Cards?)
+* No refresh interaction (pick course, pay for course, complete course)
 **/
 
 /**
@@ -148,7 +149,10 @@ function replacePetTable(petData)
 
     // Of course one of the pages would have extra empty paragraphs...
     let petTable = document.getElementById("content");
-    let containerLocation = petTable.getElementsByTagName("p")[SCHOOL.petTableIndex];
+    let paragraphTags = petTable.getElementsByTagName("p");
+    let wisdomOffset = (paragraphTags[2].getElementsByTagName("td").length > 0) ? 2 : 0;
+
+    let containerLocation = paragraphTags[SCHOOL.petTableIndex + wisdomOffset];
     containerLocation.innerHTML = "";
 
     let petOuterContainer = document.createElement("div");
@@ -312,7 +316,7 @@ function determineBadge(petStats){
     }
 
     for (let i = 1; i < SCHOOL.tiers.length; i++){
-        if (SCHOOL.tiersInclusive ? petStats.level <= SCHOOL.tiers[i].maxLevel : 
+        if (SCHOOL.tiersInclusive ? petStats.level <= SCHOOL.tiers[i].maxLevel :
             petStats.level < SCHOOL.tiers[i].maxLevel){
             badge = SCHOOL.tiers[i];
         }
@@ -467,7 +471,7 @@ function recommendNext(petStats){
         if (highestStat(petStats) === "level"){
             return "level";
         }
-    
+
         const recommendedStat = lowestStat(petStats);
 
         // Check that lowest stat is actually trainable. If not, recommend level.
@@ -516,7 +520,7 @@ function findOutlier(mode, petStats){
     }
 
     // You always need to level first if the outlier is too big, but if it's hp the multiplier is different.
-    if (outlierKey === "hp" && petStats.level < outlierValue / SCHOOL.hpMult 
+    if (outlierKey === "hp" && petStats.level < outlierValue / SCHOOL.hpMult
         || (outlierKey !== "hp" && petStats.level < outlierValue / 2)){
         outlierKey = "level";
         outlierValue = petStats.level;
@@ -548,7 +552,7 @@ function detectSchool(){
     else if (document.URL.includes(SCHOOL_SETTINGS.get(SCHOOL_NINJA).url)){
         return SCHOOL_SETTINGS.get(SCHOOL_NINJA);
     }
-    
+
     return SCHOOL_SETTINGS.get(SCHOOL_SWASHBUCKLING);
 }
 
@@ -652,7 +656,7 @@ function setUpClasses(){
         padding-top: 7px;
         padding-bottom: 7px;
         text-align: left;
-      } 
+      }
       .petStats-stats {
         margin: 15px auto 10px;
         width: 90%;
