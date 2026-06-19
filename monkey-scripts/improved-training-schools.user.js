@@ -1,14 +1,16 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2026-05-11
+// @version      2026-06-20-2
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
 // @match        *://*.neopets.com/island/*fight_training.phtml?*type=status*
+// @match        *://*.neopets.com/safetydeposit.phtml*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=neopets.com
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_deleteValue
 // ==/UserScript==
 
 /**
@@ -25,13 +27,13 @@
  * - Enroll and Pay from the same page
  * - Pets not training are still happy! Isn't that nice :)
  * - Recommends next stat based on an even leveling strategy, respecting boost maxes.
+ * - No page refresh between enroll, pay, complete, or SDB withdrawal
+ * - SDB links with auto-fill for codestones/dubloons and Move to Inventory preselect
  */
 
 /**
 * Ideas:
 * Reverseable Sort? - Done as an Option, button for later.
-* Make nicer to look at (Cards?)
-* No refresh interaction (pick course, pay for course, complete course)
 **/
 
 /**
@@ -47,6 +49,52 @@ const OPT_LOCKING = true; // Enables the locking feature
 const LOCKED_IMAGE = "https://images.neopets.com/pin/bank_pin_mgr_35.jpg";
 const UNLOCKED_IMAGE = "https://images.neopets.com/items/gif_key_secret_door.gif";
 const BADGE_GRADUATE = 'https://images.neopets.com/items/clo_grad_vanda_hat.gif';
+const EVIL_COCONUT_STAMP_ICONS = [
+    'https://images.neopets.com/items/spo_coconut_1.gif',
+    'https://images.neopets.com/items/spo_coconut_2.gif',
+    'https://images.neopets.com/items/spo_coconut_3.gif',
+    'https://images.neopets.com/items/spo_coconut_4.gif',
+    'https://images.neopets.com/items/spo_coconut_5.gif',
+    'https://images.neopets.com/items/spo_coconut_6.gif',
+    'https://images.neopets.com/items/spo_coconut_7.gif',
+    'https://images.neopets.com/items/spo_coconut_8.gif',
+    'https://images.neopets.com/items/spo_coconut_9.gif',
+    'https://images.neopets.com/items/spo_coconut_10.gif',
+    'https://images.neopets.com/items/spo_coconut_11.gif',
+    'https://images.neopets.com/items/spo_coconut_12.gif',
+    'https://images.neopets.com/items/spo_coconut_13.gif',
+    'https://images.neopets.com/items/spo_coconut_14.gif',
+    'https://images.neopets.com/items/spo_coconut_18.gif',
+    'https://images.neopets.com/items/spo_coconut_17.gif',
+    'https://images.neopets.com/items/spo_coconut_23.gif',
+    'https://images.neopets.com/items/spo_coconut_16.gif',
+    'https://images.neopets.com/items/spo_coconut_xmas.gif',
+    'https://images.neopets.com/items/spo_coconut_19.gif',
+    'https://images.neopets.com/items/spo_coconut_20.gif',
+    'https://images.neopets.com/items/spo_coconut_21.gif',
+    'https://images.neopets.com/items/spo_coconut_24.gif',
+    'https://images.neopets.com/items/spo_coconut_15.gif',
+    'https://images.neopets.com/items/spo_coconut_25.gif',
+];
+const STAT_ROW_ICONS = {
+    level: 'https://images.neopets.com/themes/h5/basic/images/level-icon.png',
+    hp: 'https://images.neopets.com/themes/h5/basic/images/health-icon.png',
+    strength: 'https://images.neopets.com/themes/h5/basic/images/equip-icon.png',
+    defence: 'https://images.neopets.com/items/armorednegg.gif',
+};
+const COURSE_ROW_IDS = {
+    Level: 'level',
+    Endurance: 'hp',
+    Strength: 'strength',
+    Defence: 'defence',
+};
+const ROW_COURSES = {
+    level: 'Level',
+    hp: 'Endurance',
+    strength: 'Strength',
+    defence: 'Defence',
+};
+const enrollmentRowSnapshots = new Map();
 
 /**
  * School Settings (to help with the different schools)
@@ -113,6 +161,27 @@ SCHOOL_SETTINGS.set(SCHOOL_NINJA, {
 * Monkey Storage
 **/
 const PET_STORAGE = "petStorage";
+const PAYMENT_STORAGE = "trainingPayment";
+const PAYMENT_PET = "trainingPaymentPet";
+const PAYMENT_ICON = "https://images.neopets.com/items/sdb.gif";
+const CODESTONE_ICONS = {
+    'Bri Codestone': 'https://images.neopets.com/items/codestone10.gif',
+    'Eo Codestone': 'https://images.neopets.com/items/codestone5.gif',
+    'Har Codestone': 'https://images.neopets.com/items/codestone9.gif',
+    'Lu Codestone': 'https://images.neopets.com/items/codestone3.gif',
+    'Main Codestone': 'https://images.neopets.com/items/codestone6.gif',
+    'Mau Codestone': 'https://images.neopets.com/items/codestone1.gif',
+    'Orn Codestone': 'https://images.neopets.com/items/codestone8.gif',
+    'Tai-Kai Codestone': 'https://images.neopets.com/items/codestone2.gif',
+    'Vo Codestone': 'https://images.neopets.com/items/codestone4.gif',
+    'Zei Codestone': 'https://images.neopets.com/items/codestone7.gif',
+    'Mag Codestone': 'https://images.neopets.com/items/codestone11.gif',
+    'Vux Codestone': 'https://images.neopets.com/items/codestone12.gif',
+    'Cui Codestone': 'https://images.neopets.com/items/codestone13.gif',
+    'Kew Codestone': 'https://images.neopets.com/items/codestone14.gif',
+    'Sho Codestone': 'https://images.neopets.com/items/codestone15.gif',
+    'Zed Codestone': 'https://images.neopets.com/items/codestone16.gif',
+};
 let petStorage = new Map();
 if (GM_getValue(PET_STORAGE)){
     petStorage = new Map(JSON.parse(GM_getValue(PET_STORAGE)));
@@ -127,17 +196,25 @@ main();
 
 function main(){
     try{
-        if (document.readyState !== 'loading') {
-            replacePetTable(getPets(document));
+        if (location.pathname.includes("safetydeposit.phtml")) {
+            runWhenReady(handleSdbPage);
             return;
         }
-        else {
-            document.addEventListener('DOMContentLoaded', replacePetTable(getPets(document)));
-        }
+
+        runWhenReady(() => replacePetTable(getPets(document)));
     }
     catch (error){
         console.log(error);
         createRetryButton();
+    }
+}
+
+function runWhenReady(fn){
+    if (document.readyState !== 'loading') {
+        fn();
+    }
+    else {
+        document.addEventListener('DOMContentLoaded', fn);
     }
 }
 
@@ -214,29 +291,7 @@ function replacePetTable(petData)
 
         // Only set up the enrollment behaviour if there's no progress being reported.
         if (petStats.petProgress.trim().length === 0){
-            // Submit
-            let levelDiv = document.getElementById(`enroll-level-${petName}`);
-            levelDiv.addEventListener("click", function() {submitCourse(petName, "Level")});
-            let healthDiv = document.getElementById(`enroll-hp-${petName}`);
-            healthDiv.addEventListener("click", function() {submitCourse(petName, "Endurance")});
-            let strengthDiv = document.getElementById(`enroll-strength-${petName}`);
-            strengthDiv.addEventListener("click", function() {submitCourse(petName, "Strength")});
-            let defenceDiv = document.getElementById(`enroll-defence-${petName}`);
-            defenceDiv.addEventListener("click", function() {submitCourse(petName, "Defence")});
-
-            // Hover behaviour
-            let levelRow = document.getElementById(`level-${petName}`);
-            levelRow.onmouseover = function() {mouseOver(levelRow)};
-            levelRow.onmouseout = function() {mouseOut(levelRow)};
-            let healthRow = document.getElementById(`hp-${petName}`);
-            healthRow.onmouseover = function() {mouseOver(healthRow)};
-            healthRow.onmouseout = function() {mouseOut(healthRow)};
-            let strengthRow = document.getElementById(`strength-${petName}`);
-            strengthRow.onmouseover = function() {mouseOver(strengthRow)};
-            strengthRow.onmouseout = function() {mouseOut(strengthRow)};
-            let defenceRow = document.getElementById(`defence-${petName}`);
-            defenceRow.onmouseover = function() {mouseOver(defenceRow)};
-            defenceRow.onmouseout = function() {mouseOut(defenceRow)};
+            setupEnrollmentHandlers(petName);
         }
 
         // Progress reporting
@@ -329,13 +384,8 @@ function determineBadge(petStats){
 }
 
 function submitCourse(petName, stat){
-    // Construct a FormData instance
-    const formData = new FormData();
-
-    // Add a text field
-    formData.append("type", "start");
-    formData.append("course_type", stat);
-    formData.append("pet_name", petName);
+    const rowId = COURSE_ROW_IDS[stat];
+    clearEnrollmentErrors(petName);
 
     $.ajax({
         type: "POST",
@@ -343,33 +393,530 @@ function submitCourse(petName, stat){
         data: `type=start&course_type=${stat}&pet_name=${petName}`,
         timeout: 6000,
         success: function(data) {
-            refreshPetData(petName);
+            const postError = parseEnrollmentError(data);
+            if (postError) {
+                showEnrollmentError(petName, rowId, postError);
+                return;
+            }
+
+            fetchStatusPage().then(html => {
+                const dataWrapper = document.createElement('div');
+                dataWrapper.innerHTML = html;
+                const petStats = getPets(dataWrapper).get(petName);
+
+                if (!petStats || !enrollmentSucceeded(petStats)) {
+                    const statusError = parseEnrollmentError(html)
+                        || parseEnrollmentError(data)
+                        || 'This stat cannot be trained right now.';
+                    showEnrollmentError(petName, rowId, statusError);
+                    return;
+                }
+
+                refreshPetCard(petName, html);
+            });
         },
         error: function(xhr, status, error) {
-            console.log(status + error)
+            console.log(status + error);
+            showEnrollmentError(petName, rowId, 'Could not reach the training school. Try again.');
         }
     })
 }
 
-function refreshPetData(petName){
-    $.ajax({
-        type: "POST",
-        url: SCHOOL.url,
-        data: `type=status`,
-        timeout: 6000,
-        success: function(data) {
-            let dataWrapper = document.createElement("div");
-            dataWrapper.innerHTML = data;
-            let petData = getPets(dataWrapper);
-            let progessCellToUpdate = document.getElementById(`progress-${petName}`);
-            progessCellToUpdate.innerHTML = petData.get(petName).petProgress;
-            let nameCellToUpdate = document.getElementById(`pet-title-${petName}`);
-            nameCellToUpdate.innerHTML = petData.get(petName).petTitle;
-        },
-        error: function(xhr, status, error) {
-            console.log(status + error)
+function enrollmentSucceeded(petStats){
+    return petStats.petProgress.trim().length > 0
+        || (petStats.petTitle && petStats.petTitle.trim().length > 0);
+}
+
+function isEnrollmentNotice(text){
+    return /be warned.*cancel.*course/i.test(text)
+        || /will not be able to train for 24 hours if you cancel/i.test(text);
+}
+
+function parseEnrollmentError(pageHtml){
+    if (!pageHtml || typeof pageHtml !== 'string') {
+        return null;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = pageHtml;
+
+    for (const selector of [
+        'font[color="red"]',
+        'font[color="#ff0000"]',
+        'font[color="#FF0000"]',
+        '.errorMessage',
+        '.error',
+    ]) {
+        for (const el of wrapper.querySelectorAll(selector)) {
+            const text = el.innerText.trim();
+            if (text.length > 5 && text.length < 500 && !isEnrollmentNotice(text)) {
+                return text;
+            }
         }
-    })
+    }
+
+    const content = wrapper.querySelector('.content') || wrapper;
+    const patterns = [
+        /you cannot[^.!?\n]+/i,
+        /cannot (?:train|increase|raise|study)[^.!?\n]+/i,
+        /too high[^.!?\n]+/i,
+        /must (?:train|increase)(?: your)? level[^.!?\n]+/i,
+        /already (?:studying|enrolled|training|signed up)[^.!?\n]+/i,
+        /not allowed to[^.!?\n]+/i,
+        /have graduated[^.!?\n]+/i,
+        /before you can train[^.!?\n]+/i,
+    ];
+
+    for (const pattern of patterns) {
+        const match = content.innerText.match(pattern);
+        if (match && !isEnrollmentNotice(match[0])) {
+            return match[0].trim();
+        }
+    }
+
+    for (const el of content.querySelectorAll('b, strong, p, td')) {
+        const text = el.innerText.trim();
+        if (text.length > 5
+            && text.length < 300
+            && !isEnrollmentNotice(text)
+            && /cannot|too high|must train|already|not allowed|graduated|before you can/i.test(text)) {
+            return text;
+        }
+    }
+
+    return null;
+}
+
+function getRandomEnrollErrorIcon(){
+    return EVIL_COCONUT_STAMP_ICONS[Math.floor(Math.random() * EVIL_COCONUT_STAMP_ICONS.length)];
+}
+
+function statDetailsId(rowId, petName){
+    return `enroll-${rowId}-${petName}`;
+}
+
+function showEnrollmentError(petName, rowId, message){
+    const row = document.getElementById(`${rowId}-${petName}`);
+    const icon = row?.querySelector('.petStats-icon');
+    const details = document.getElementById(statDetailsId(rowId, petName));
+    if (!row || !icon || !details) {
+        return;
+    }
+
+    const key = `${petName}-${rowId}`;
+    if (!enrollmentRowSnapshots.has(key)) {
+        enrollmentRowSnapshots.set(key, {
+            iconSrc: icon.src,
+            detailsHtml: details.innerHTML,
+        });
+    }
+
+    icon.src = getRandomEnrollErrorIcon();
+    icon.classList.add('enrollment-error-icon');
+    details.innerHTML = `<span class="enrollment-error-text">${escapeHtml(message)}</span>`;
+    row.classList.add('enrollment-error-row');
+    details.onclick = null;
+}
+
+function restoreEnrollmentRow(petName, rowId){
+    const key = `${petName}-${rowId}`;
+    const snapshot = enrollmentRowSnapshots.get(key);
+    if (!snapshot) {
+        return;
+    }
+
+    const row = document.getElementById(`${rowId}-${petName}`);
+    const icon = row?.querySelector('.petStats-icon');
+    const details = document.getElementById(statDetailsId(rowId, petName));
+    if (!row || !icon || !details) {
+        enrollmentRowSnapshots.delete(key);
+        return;
+    }
+
+    icon.src = snapshot.iconSrc;
+    icon.classList.remove('enrollment-error-icon');
+    details.innerHTML = snapshot.detailsHtml;
+    row.classList.remove('enrollment-error-row');
+    enrollmentRowSnapshots.delete(key);
+
+    const progressContainer = document.getElementById(`progress-${petName}`);
+    if (progressContainer && progressContainer.innerHTML.trim() === '') {
+        details.onclick = () => submitCourse(petName, ROW_COURSES[rowId]);
+    }
+}
+
+function clearEnrollmentErrors(petName){
+    for (const rowId of Object.values(COURSE_ROW_IDS)) {
+        restoreEnrollmentRow(petName, rowId);
+    }
+}
+
+function escapeHtml(text){
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function fetchStatusPage(){
+    return fetch(`${SCHOOL.url}?type=status`, { credentials: 'include' }).then(r => r.text());
+}
+
+function refreshPetCard(petName, pageHtml){
+    clearEnrollmentErrors(petName);
+
+    const dataWrapper = document.createElement("div");
+    dataWrapper.innerHTML = pageHtml;
+    const petData = getPets(dataWrapper);
+    const petStats = petData.get(petName);
+    if (!petStats) {
+        return;
+    }
+
+    const stored = petStorage.get(petName) || {};
+    petStats.locked = stored.locked || false;
+    petStorage.set(petName, { ...stored, ...petStats, locked: petStats.locked });
+    storeMonkeyMap(PET_STORAGE, petStorage);
+
+    updatePetStatDisplays(petName, petStats);
+
+    const progressContainer = document.getElementById(`progress-${petName}`);
+    if (petStats.petProgress.trim().length === 0) {
+        progressContainer.innerHTML = "";
+        setupEnrollmentHandlers(petName);
+        syncPaymentCache(petStats);
+    }
+    else {
+        teardownEnrollmentHandlers(petName);
+        updateProgressCell(petStats);
+    }
+}
+
+function updatePetStatDisplays(petName, petStats){
+    document.getElementById(`enroll-name-${petName}`).innerHTML = `<b>${petStats.name}</b>`;
+    document.getElementById(`enroll-cost-${petName}`).innerHTML =
+        `<b>${petStats.petTitle ? petStats.petTitle : petStats.badge.cost}</b>`;
+    document.getElementById(`enroll-hsd-${petName}`).innerHTML = `<b>${petStats.hsd}</b> HSD`;
+    document.getElementById(`enroll-level-${petName}`).innerHTML =
+        `Lvl : <font color="green"><b>${petStats.level}</b></font>`;
+    document.getElementById(`enroll-hp-${petName}`).innerHTML = `Hp : <b>${petStats.hp}</b>`;
+    document.getElementById(`enroll-strength-${petName}`).innerHTML = `Str : <b>${petStats.strength}</b>`;
+    document.getElementById(`enroll-defence-${petName}`).innerHTML = `Def : <b>${petStats.defence}</b>`;
+    document.getElementById(`enroll-badge-${petName}`).src = petStats.badge.image;
+
+    for (const [rowId, iconUrl] of Object.entries(STAT_ROW_ICONS)) {
+        const row = document.getElementById(`${rowId}-${petName}`);
+        const icon = row?.querySelector('.petStats-icon');
+        if (icon) {
+            icon.src = iconUrl;
+            icon.classList.remove('enrollment-error-icon');
+            row.classList.remove('enrollment-error-row');
+        }
+    }
+
+    for (const statId of ['level', 'hp', 'strength', 'defence']) {
+        document.getElementById(`${statId}-${petName}`).classList.remove('recommended-stat');
+    }
+    formatRecommendedStat(petStats);
+}
+
+function setupEnrollmentHandlers(petName){
+    for (const [rowId, course] of Object.entries(ROW_COURSES)) {
+        const detailDiv = document.getElementById(statDetailsId(rowId, petName));
+        detailDiv.onclick = () => submitCourse(petName, course);
+
+        const row = document.getElementById(`${rowId}-${petName}`);
+        row.classList.add('enrollable-stat');
+        row.onmouseover = () => mouseOver(row);
+        row.onmouseout = () => mouseOut(row);
+    }
+}
+
+function teardownEnrollmentHandlers(petName){
+    for (const rowId of Object.keys(ROW_COURSES)) {
+        const detailDiv = document.getElementById(statDetailsId(rowId, petName));
+        detailDiv.onclick = null;
+
+        const row = document.getElementById(`${rowId}-${petName}`);
+        row.classList.remove('enrollable-stat', 'stat-hover');
+        row.onmouseover = null;
+        row.onmouseout = null;
+    }
+}
+
+function parsePaymentCosts(petProgressHtml){
+    return parsePaymentItems(petProgressHtml).map(item => item.name);
+}
+
+function parsePaymentItems(petProgressHtml){
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = petProgressHtml;
+    const items = [];
+    for (const bold of wrapper.getElementsByTagName('b')) {
+        const name = bold.innerText.trim();
+        if (name.includes('Codestone') || name.includes('Dubloon')) {
+            items.push({
+                name,
+                image: findPaymentItemImage(bold),
+            });
+        }
+    }
+    return items;
+}
+
+function findPaymentItemImage(bold){
+    const cell = bold.closest('td') || bold.parentElement;
+    if (cell) {
+        let lastImg = null;
+        for (const node of cell.querySelectorAll('img[src*="/items/"], b')) {
+            if (node.tagName === 'IMG') {
+                lastImg = node.src;
+            }
+            else if (node === bold && lastImg) {
+                return lastImg;
+            }
+        }
+    }
+
+    let sibling = bold.previousElementSibling;
+    while (sibling) {
+        if (sibling.tagName === 'IMG' && sibling.src.includes('/items/')) {
+            return sibling.src;
+        }
+        sibling = sibling.previousElementSibling;
+    }
+
+    return getPaymentIcon(bold.innerText.trim());
+}
+
+function aggregatePaymentItems(items){
+    const map = new Map();
+    for (const item of items) {
+        const existing = map.get(item.name);
+        if (existing) {
+            existing.quantity += 1;
+        }
+        else {
+            map.set(item.name, { name: item.name, image: item.image, quantity: 1 });
+        }
+    }
+    return [...map.values()];
+}
+
+function costsToMap(costs){
+    const result = {};
+    for (const cost of costs) {
+        result[cost] = (result[cost] || 0) + 1;
+    }
+    return result;
+}
+
+function needsPayment(petProgressHtml){
+    return petProgressHtml.includes('Codestone') || petProgressHtml.includes('Dubloon');
+}
+
+function isTrainingInProgress(petProgressHtml){
+    return petProgressHtml.includes('Time till course finishes');
+}
+
+function clearPaymentCache(){
+    GM_deleteValue(PAYMENT_STORAGE);
+    GM_deleteValue(PAYMENT_PET);
+}
+
+function storePaymentForPet(petName, costs){
+    GM_setValue(PAYMENT_STORAGE, JSON.stringify(costsToMap(costs)));
+    GM_setValue(PAYMENT_PET, petName);
+}
+
+function syncPaymentCache(petStats){
+    if (needsPayment(petStats.petProgress)) {
+        storePaymentForPet(petStats.name, parsePaymentCosts(petStats.petProgress));
+    }
+    else if (isTrainingInProgress(petStats.petProgress) || petStats.petProgress.trim().length === 0) {
+        clearPaymentCache();
+    }
+}
+
+function getSdbCategory(itemName){
+    return itemName.includes('Codestone') ? 2 : 3;
+}
+
+function getSdbUrl(itemName){
+    const category = getSdbCategory(itemName);
+    return `https://www.neopets.com/safetydeposit.phtml?obj_name=${encodeURIComponent(itemName)}&category=${category}`;
+}
+
+function getPaymentIcon(itemName){
+    if (itemName.includes('Codestone')) {
+        return CODESTONE_ICONS[itemName] || PAYMENT_ICON;
+    }
+    if (itemName.includes('Dubloon')) {
+        return 'https://images.neopets.com/items/dubloon1.gif';
+    }
+    return PAYMENT_ICON;
+}
+
+function createPaymentTileGrid(petName, costs, paymentItems){
+    const grid = document.createElement('div');
+    grid.classList.add('training-payment-grid');
+
+    for (const item of paymentItems) {
+        grid.appendChild(createPaymentTile(petName, costs, item));
+    }
+
+    return grid;
+}
+
+function createPaymentTile(petName, costs, item){
+    const link = document.createElement('a');
+    link.classList.add('training-payment-tile');
+    link.href = getSdbUrl(item.name);
+    link.target = '_blank';
+    link.title = `${item.name} — open in Safety Deposit Box`;
+    link.onclick = () => storePaymentForPet(petName, costs);
+
+    const inner = document.createElement('div');
+    inner.classList.add('training-payment-tile-inner');
+
+    const img = document.createElement('img');
+    img.classList.add('training-payment-item-img');
+    img.src = item.image;
+    img.alt = item.name;
+    inner.appendChild(img);
+
+    const qty = document.createElement('span');
+    qty.classList.add('training-payment-qty');
+    qty.innerText = String(item.quantity);
+    inner.appendChild(qty);
+
+    link.appendChild(inner);
+    return link;
+}
+
+function createProgressButton(label, className){
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.classList.add('training-progress-btn', className);
+    button.innerText = label;
+    return button;
+}
+
+async function completeAndRefresh(petName){
+    await processCourse(petName, 'complete');
+    const html = await fetchStatusPage();
+    refreshPetCard(petName, html);
+}
+
+async function payAndRefresh(petName){
+    await processCourse(petName, 'pay');
+    const html = await fetchStatusPage();
+    refreshPetCard(petName, html);
+}
+
+function handleSdbPage(){
+    const costString = GM_getValue(PAYMENT_STORAGE, '{}');
+    const costs = JSON.parse(costString);
+    if (!costs || Object.keys(costs).length === 0) {
+        return;
+    }
+
+    fillSdbForm(costs);
+    showCostsOnSdb(costs);
+    preselectMoveToInventory();
+}
+
+function fillSdbForm(costs){
+    const legacyInputs = document.querySelectorAll('input.remove_safety_deposit');
+    if (legacyInputs.length > 0) {
+        for (const removeInput of legacyInputs) {
+            const name = getSdbItemNameFromLegacyRow(removeInput);
+            if (name in costs) {
+                const available = Number(removeInput.dataset.total_count || removeInput.getAttribute('data-total_count') || costs[name]);
+                removeInput.value = Math.min(costs[name], available);
+                removeInput.setAttribute('data-remove_val', 'y');
+            }
+        }
+        return;
+    }
+
+    for (const row of findSdbItemRows()) {
+        const name = getSdbItemNameFromRow(row);
+        if (!(name in costs)) {
+            continue;
+        }
+
+        const quantityInput = row.querySelector('input[type="text"], input[type="number"]');
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        const available = getSdbAvailableCount(row, quantityInput);
+        const removeCount = Math.min(costs[name], available || costs[name]);
+
+        if (quantityInput) {
+            quantityInput.value = removeCount;
+            quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
+            quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (checkbox) {
+            checkbox.checked = removeCount > 0;
+        }
+    }
+}
+
+function showCostsOnSdb(costs){
+    for (const cost in costs) {
+        const itemNameB = [...document.getElementsByTagName('b')].find(b => b.innerText.trim().startsWith(cost));
+        if (!itemNameB) {
+            continue;
+        }
+        const row = itemNameB.closest('tr') || itemNameB.parentElement;
+        if (!row || row.querySelector('.training-needed-count')) {
+            continue;
+        }
+        const neededEl = document.createElement('b');
+        neededEl.classList.add('training-needed-count');
+        neededEl.innerText = `Need x${costs[cost]}`;
+        row.appendChild(document.createElement('br'));
+        row.appendChild(neededEl);
+    }
+}
+
+function preselectMoveToInventory(){
+    for (const select of document.querySelectorAll('select')) {
+        for (const option of select.options) {
+            if (/move to inventory/i.test(option.text)) {
+                select.value = option.value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                return;
+            }
+        }
+    }
+}
+
+function findSdbItemRows(){
+    const content = document.querySelector('.content');
+    if (!content) {
+        return [];
+    }
+    return [...content.querySelectorAll('tr')].filter(row => {
+        return row.querySelector('b') && row.querySelector('input[type="text"], input[type="number"], input.remove_safety_deposit');
+    });
+}
+
+function getSdbItemNameFromLegacyRow(removeInput){
+    const nameTd = removeInput.parentElement?.previousElementSibling?.previousElementSibling?.previousElementSibling?.previousElementSibling;
+    return nameTd ? nameTd.innerText.split('\n')[0].trim() : '';
+}
+
+function getSdbItemNameFromRow(row){
+    const bold = row.querySelector('b');
+    return bold ? bold.innerText.split('\n')[0].trim() : '';
+}
+
+function getSdbAvailableCount(row, quantityInput){
+    if (quantityInput?.dataset?.total_count) {
+        return Number(quantityInput.dataset.total_count);
+    }
+    const qtyBold = [...row.querySelectorAll('b')].find(b => /^\d+$/.test(b.innerText.trim()));
+    return qtyBold ? Number(qtyBold.innerText.trim()) : null;
 }
 
 function togglePetLock(petName){
@@ -572,26 +1119,46 @@ function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function updateProgressCell(petStats, progressUpdate){
-    let progressContainer = document.getElementById(`progress-${petStats.name}`);
+function updateProgressCell(petStats){
+    const progressContainer = document.getElementById(`progress-${petStats.name}`);
     progressContainer.inert = petStats.locked;
-    progressContainer.innerHTML = progressUpdate || "";
+    progressContainer.innerHTML = "";
 
-    if (progressUpdate){
+    if (petStats.petProgress.includes('Course Finished!')){
+        const completeCourseBtn = createProgressButton('Complete Course!', 'complete-course');
+        completeCourseBtn.onclick = () => completeAndRefresh(petStats.name);
+        progressContainer.appendChild(completeCourseBtn);
         return;
     }
 
-    if (petStats.petProgress.includes('Course Finished!')){
-        const completeCourseBtn = document.createElement('button');
-        completeCourseBtn.innerText = 'Complete Course!';
-        completeCourseBtn.onclick = () => {
-            processCourse(petStats.name, 'complete').then(txt => updateProgressCell(petStats, txt));
+    if (needsPayment(petStats.petProgress)){
+        const costs = parsePaymentCosts(petStats.petProgress);
+        const paymentItems = aggregatePaymentItems(parsePaymentItems(petStats.petProgress));
+        storePaymentForPet(petStats.name, costs);
+
+        progressContainer.appendChild(createPaymentTileGrid(petStats.name, costs, paymentItems));
+
+        const actionRow = document.createElement('div');
+        actionRow.classList.add('training-progress-actions');
+
+        const payBtn = createProgressButton('Pay', 'pay-course');
+        payBtn.onclick = () => payAndRefresh(petStats.name);
+        actionRow.appendChild(payBtn);
+
+        const cancelBtn = createProgressButton('Cancel', 'cancel-course');
+        cancelBtn.onclick = async () => {
+            await processCourse(petStats.name, 'cancel');
+            const html = await fetchStatusPage();
+            refreshPetCard(petStats.name, html);
         };
-        progressContainer.appendChild(completeCourseBtn);
+        actionRow.appendChild(cancelBtn);
+
+        progressContainer.appendChild(actionRow);
+        return;
     }
-    else {
-        progressContainer.innerHTML = petStats.petProgress;
-    }
+
+    progressContainer.innerHTML = petStats.petProgress;
+    syncPaymentCache(petStats);
 }
 
 // Options are 'pay', 'cancel', and 'complete'
@@ -691,6 +1258,106 @@ function setUpClasses(){
       }
       .recommended-stat{
         background-color: #90EE90
+      }
+      .enrollable-stat {
+        cursor: pointer;
+      }
+      .training-payment-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+        gap: 6px;
+        padding: 10px 8px 6px;
+        justify-items: center;
+      }
+      .training-payment-tile {
+        position: relative;
+        display: block;
+        width: 64px;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+      }
+      .training-payment-tile-inner {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(180deg, #faf8ff 0%, #f0ebfa 100%);
+        border: 2px solid #dfc5fe;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+      }
+      .training-payment-tile:hover .training-payment-tile-inner,
+      .training-payment-tile:focus .training-payment-tile-inner {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(107, 63, 160, 0.25);
+        border-color: #b894f0;
+      }
+      .training-payment-item-img {
+        max-width: 48px;
+        max-height: 48px;
+        image-rendering: pixelated;
+      }
+      .training-payment-qty {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 5px;
+        border-radius: 10px;
+        background: #6b3fa0;
+        color: #fff;
+        font-size: 10px;
+        font-weight: bold;
+        line-height: 20px;
+        text-align: center;
+        border: 2px solid #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        pointer-events: none;
+      }
+      .training-progress-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        padding: 8px;
+      }
+      .training-progress-btn {
+        padding: 4px 10px;
+        border-radius: 8px;
+        border: 1px solid #A9A9A9;
+        background-color: white;
+        cursor: pointer;
+      }
+      .training-progress-btn.complete-course {
+        background-color: #90EE90;
+      }
+      .training-progress-btn.pay-course {
+        background-color: #FFD580;
+      }
+      .training-needed-count {
+        color: #8B0000;
+      }
+      .enrollment-error-row {
+        background-color: #fff0f0 !important;
+        border: 2px solid #cc0000;
+      }
+      .enrollment-error-icon {
+        border-color: #cc0000 !important;
+        background-color: #ffe6e6 !important;
+        box-shadow: 0 0 8px rgba(204, 0, 0, .8);
+      }
+      .enrollment-error-text {
+        color: #cc0000;
+        font-weight: bold;
+        font-size: 9pt;
+        line-height: 1.2;
+        display: block;
+        text-align: left;
+        white-space: normal;
       }
       `
     ;
