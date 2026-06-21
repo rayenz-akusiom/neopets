@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Archidekt Deck Review Bridge
 // @namespace    rayenz.hub.deck-review
-// @version      2026-06-21.3
+// @version      2026-06-21.4
 // @description  CORS bridge for Rayenz Hub deck snapshots; stages full-deck apply on Archidekt deck pages.
 // @author       rayenz-akusiom
 // @match        https://archidekt.com/decks/*
@@ -12,6 +12,9 @@
 // @match        http://127.0.0.1:*/*
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
 // @grant        unsafeWindow
 // @run-at       document-idle
 // ==/UserScript==
@@ -21,13 +24,17 @@
 
     var BANNER_ID = 'rayenz-archidekt-apply-banner';
     var ARCHIDEKT_API = 'https://archidekt.com/api';
-    var USER_AGENT = 'rayenz-hub-bridge/1.1';
+    var USER_AGENT = 'rayenz-hub-bridge/1.2';
     var APPLY_STORAGE_PREFIX = 'rayenz-deck-apply:';
 
     function isHubPage() {
         return /rayenz-akusiom\.github\.io\/rayenz-akusiom/i.test(location.href) ||
             /^https?:\/\/localhost(:\d+)?\//i.test(location.href) ||
             /^https?:\/\/127\.0\.0\.1(:\d+)?\//i.test(location.href);
+    }
+
+    function applyStorageKey(deckId) {
+        return APPLY_STORAGE_PREFIX + deckId;
     }
 
     function buildSnapshot(rawDeck) {
@@ -98,12 +105,16 @@
             import_mode: 'full_deck_replace',
             created_at: new Date().toISOString()
         };
-        localStorage.setItem(APPLY_STORAGE_PREFIX + deckId, JSON.stringify(payload));
+        try {
+            GM_setValue(applyStorageKey(deckId), JSON.stringify(payload));
+        } catch (err) {
+            throw new Error('Could not stage apply. Use Copy full deck import on tablet instead.');
+        }
     }
 
     function getStagedApply(deckId) {
         try {
-            var raw = localStorage.getItem(APPLY_STORAGE_PREFIX + deckId);
+            var raw = GM_getValue(applyStorageKey(deckId), null);
             return raw ? JSON.parse(raw) : null;
         } catch (e) {
             return null;
@@ -112,7 +123,7 @@
 
     function clearStagedApply(deckId) {
         try {
-            localStorage.removeItem(APPLY_STORAGE_PREFIX + deckId);
+            GM_deleteValue(applyStorageKey(deckId));
         } catch (e) {
             /* ignore */
         }
@@ -121,6 +132,7 @@
     function installHubBridge() {
         unsafeWindow.RayenzArchidektBridge = {
             isAvailable: true,
+            canApply: true,
             fetchDeckSnapshot: fetchDeckSnapshot,
             stageApply: stageApply,
             clearStagedApply: clearStagedApply,
@@ -236,14 +248,21 @@
         }
         var staged = getStagedApply(deckId);
         if (!staged || !staged.import_text) {
+            removeBanner();
             return;
         }
         buildApplyBanner(deckId, staged);
+    }
+
+    function installArchidektListeners() {
+        window.addEventListener('pageshow', checkPendingApply);
+        window.addEventListener('focus', checkPendingApply);
     }
 
     if (isHubPage()) {
         installHubBridge();
     } else {
         checkPendingApply();
+        installArchidektListeners();
     }
 })();
