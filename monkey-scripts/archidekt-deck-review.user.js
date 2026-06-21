@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Archidekt Deck Review Bridge
 // @namespace    rayenz.hub.deck-review
-// @version      2026-06-21.4
+// @version      2026-06-21.5
 // @description  CORS bridge for Rayenz Hub deck snapshots; stages full-deck apply on Archidekt deck pages.
 // @author       rayenz-akusiom
 // @match        https://archidekt.com/decks/*
@@ -37,6 +37,20 @@
         return APPLY_STORAGE_PREFIX + deckId;
     }
 
+    function buildCategorySettings(rawDeck) {
+        var map = {};
+        (rawDeck.categories || []).forEach(function (cat) {
+            if (!cat || !cat.name) {
+                return;
+            }
+            map[cat.name] = {
+                includedInDeck: cat.includedInDeck !== false,
+                includedInPrice: cat.includedInPrice !== false
+            };
+        });
+        return map;
+    }
+
     function buildSnapshot(rawDeck) {
         var cards = [];
         (rawDeck.cards || []).forEach(function (entry) {
@@ -64,7 +78,8 @@
         });
         return {
             fetched_at: new Date().toISOString().slice(0, 10),
-            cards: cards
+            cards: cards,
+            category_settings: buildCategorySettings(rawDeck)
         };
     }
 
