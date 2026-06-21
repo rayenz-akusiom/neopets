@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Archidekt Deck Review Bridge
 // @namespace    rayenz.hub.deck-review
-// @version      2026-06-21.2
-// @description  CORS bridge for Rayenz Hub deck snapshots; applies apply manifests on Archidekt deck pages.
+// @version      2026-06-21.3
+// @description  CORS bridge for Rayenz Hub deck snapshots; stages full-deck apply on Archidekt deck pages.
 // @author       rayenz-akusiom
 // @match        https://archidekt.com/decks/*
 // @match        https://rayenz-akusiom.github.io/rayenz-akusiom/*
@@ -19,9 +19,10 @@
 (function () {
     'use strict';
 
-    var PANEL_ID = 'rayenz-archidekt-bridge';
+    var BANNER_ID = 'rayenz-archidekt-apply-banner';
     var ARCHIDEKT_API = 'https://archidekt.com/api';
-    var USER_AGENT = 'rayenz-hub-bridge/1.0';
+    var USER_AGENT = 'rayenz-hub-bridge/1.1';
+    var APPLY_STORAGE_PREFIX = 'rayenz-deck-apply:';
 
     function isHubPage() {
         return /rayenz-akusiom\.github\.io\/rayenz-akusiom/i.test(location.href) ||
@@ -88,25 +89,56 @@
         });
     }
 
+    function stageApply(deckId, importText) {
+        if (!deckId || !importText) {
+            throw new Error('Missing deck id or import text');
+        }
+        var payload = {
+            import_text: importText,
+            import_mode: 'full_deck_replace',
+            created_at: new Date().toISOString()
+        };
+        localStorage.setItem(APPLY_STORAGE_PREFIX + deckId, JSON.stringify(payload));
+    }
+
+    function getStagedApply(deckId) {
+        try {
+            var raw = localStorage.getItem(APPLY_STORAGE_PREFIX + deckId);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function clearStagedApply(deckId) {
+        try {
+            localStorage.removeItem(APPLY_STORAGE_PREFIX + deckId);
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
     function installHubBridge() {
         unsafeWindow.RayenzArchidektBridge = {
             isAvailable: true,
-            fetchDeckSnapshot: fetchDeckSnapshot
+            fetchDeckSnapshot: fetchDeckSnapshot,
+            stageApply: stageApply,
+            clearStagedApply: clearStagedApply,
+            APPLY_STORAGE_PREFIX: APPLY_STORAGE_PREFIX
         };
     }
 
     GM_addStyle(
-        '#' + PANEL_ID + ' { position: fixed; bottom: 16px; right: 16px; z-index: 99999; ' +
-        'background: #1a202c; color: #e2e8f0; border-radius: 10px; padding: 12px; width: min(360px, 92vw); ' +
-        'box-shadow: 0 4px 20px rgba(0,0,0,0.35); font: 13px/1.4 system-ui, sans-serif; }' +
-        '#' + PANEL_ID + ' h4 { margin: 0 0 8px; font-size: 14px; }' +
-        '#' + PANEL_ID + ' textarea { width: 100%; height: 90px; font: 11px monospace; ' +
-        'border-radius: 6px; border: 1px solid #4a5568; padding: 6px; box-sizing: border-box; }' +
-        '#' + PANEL_ID + ' button { margin-top: 8px; margin-right: 6px; padding: 6px 10px; ' +
-        'border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }' +
-        '#' + PANEL_ID + ' .primary { background: #2b6cb0; color: #fff; }' +
-        '#' + PANEL_ID + ' .ghost { background: #4a5568; color: #fff; }' +
-        '#' + PANEL_ID + ' .status { margin-top: 8px; font-size: 12px; color: #a0aec0; }'
+        '#' + BANNER_ID + ' { position: fixed; bottom: 16px; right: 16px; z-index: 99999; ' +
+        'background: #1a202c; color: #e2e8f0; border-radius: 10px; padding: 12px 14px; width: min(360px, 92vw); ' +
+        'box-shadow: 0 4px 20px rgba(0,0,0,0.35); font: 13px/1.45 system-ui, sans-serif; }' +
+        '#' + BANNER_ID + ' h4 { margin: 0 0 6px; font-size: 14px; }' +
+        '#' + BANNER_ID + ' p { margin: 0 0 10px; color: #a0aec0; font-size: 12px; }' +
+        '#' + BANNER_ID + ' button { margin-right: 6px; padding: 6px 10px; ' +
+        'border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }' +
+        '#' + BANNER_ID + ' .primary { background: #2b6cb0; color: #fff; }' +
+        '#' + BANNER_ID + ' .ghost { background: #4a5568; color: #fff; }' +
+        '#' + BANNER_ID + ' .status { margin-top: 8px; font-size: 12px; color: #a0aec0; min-height: 1.2em; }'
     );
 
     function deckIdFromUrl() {
@@ -114,38 +146,10 @@
         return m ? parseInt(m[1], 10) : null;
     }
 
-    function formatLine(qty, name, setCode, collector, category) {
-        var line = qty + 'x ' + name;
-        if (setCode && collector) {
-            line += ' (' + String(setCode).toLowerCase() + ') ' + collector;
-        } else if (setCode) {
-            line += ' (' + String(setCode).toLowerCase() + ')';
-        }
-        if (category) {
-            line += ' `' + category + '`';
-        }
-        return line;
-    }
-
-    function importTextFromOperations(ops) {
-        var lines = [];
-        (ops || []).forEach(function (op) {
-            if (op.swap_categories === false) {
-                return;
-            }
-            var qty = op.quantity || 1;
-            if (op.card_in && op.card_in.name) {
-                lines.push(formatLine(qty, op.card_in.name, op.card_in.set_code, op.card_in.collector_number, 'New Set In'));
-            }
-            if (op.card_out && op.card_out.name) {
-                lines.push(formatLine(op.card_out.quantity || qty, op.card_out.name, op.card_out.set_code, op.card_out.collector_number, 'New Set Out'));
-            }
-        });
-        return lines.join('\n');
-    }
-
     function findImportTextarea() {
-        return document.querySelector('textarea[placeholder*="Import"], textarea.import-textarea, .import-modal textarea, textarea');
+        return document.querySelector(
+            'textarea[placeholder*="Import"], textarea.import-textarea, .import-modal textarea, textarea'
+        );
     }
 
     function clickByText(selector, text) {
@@ -164,97 +168,82 @@
     }
 
     async function openImportAndPaste(text) {
-        clickByText('button, a, [role="button"]', 'import');
-        await sleep(400);
+        if (!clickByText('button, a, [role="button"]', 'import')) {
+            throw new Error('Import button not found. Open Import manually, then click Apply import again.');
+        }
+        await sleep(500);
 
         var ta = findImportTextarea();
         if (!ta) {
-            throw new Error('Import textarea not found. Open Import manually, then click Paste Import Text.');
+            throw new Error('Import textarea not found. Open Import manually, then click Apply import again.');
         }
         ta.focus();
         ta.value = text;
         ta.dispatchEvent(new Event('input', { bubbles: true }));
         ta.dispatchEvent(new Event('change', { bubbles: true }));
-
-        await sleep(200);
-        if (!clickByText('button', 'save')) {
-            clickByText('button', 'save changes');
-        }
     }
 
-    function setStatus(msg) {
-        var el = document.querySelector('#' + PANEL_ID + ' .status');
+    function setBannerStatus(msg) {
+        var el = document.querySelector('#' + BANNER_ID + ' .status');
         if (el) {
-            el.textContent = msg;
+            el.textContent = msg || '';
         }
     }
 
-    function parseManifest(raw) {
-        var data = JSON.parse(raw);
-        if (!data.decks || !Array.isArray(data.decks)) {
-            throw new Error('Manifest needs decks[] array');
+    function removeBanner() {
+        var el = document.getElementById(BANNER_ID);
+        if (el) {
+            el.remove();
         }
-        return data;
     }
 
-    function opsForCurrentDeck(manifest) {
-        var deckId = deckIdFromUrl();
-        if (!deckId) {
-            throw new Error('Not on a deck page');
-        }
-        var entry = manifest.decks.find(function (d) {
-            return d.archidekt_deck_id === deckId;
-        });
-        if (!entry) {
-            throw new Error('No operations for deck ' + deckId + ' in manifest');
-        }
-        return entry.operations || [];
-    }
+    function buildApplyBanner(deckId, staged) {
+        removeBanner();
+        var banner = document.createElement('div');
+        banner.id = BANNER_ID;
+        var lineCount = (staged.import_text || '').split('\n').filter(function (l) { return l.trim(); }).length;
+        banner.innerHTML =
+            '<h4>Pending update from Rayenz Hub</h4>' +
+            '<p>Full deck replace (' + lineCount + ' lines). Confirm Save Changes in Archidekt after import.</p>' +
+            '<button type="button" class="primary" id="rayenz-apply-import">Apply import</button>' +
+            '<button type="button" class="ghost" id="rayenz-dismiss-apply">Dismiss</button>' +
+            '<div class="status"></div>';
+        document.body.appendChild(banner);
 
-    function buildPanel() {
-        if (document.getElementById(PANEL_ID)) {
-            return;
-        }
-        var panel = document.createElement('div');
-        panel.id = PANEL_ID;
-        panel.innerHTML =
-            '<h4>Rayenz Deck Review</h4>' +
-            '<textarea id="rayenz-manifest" placeholder="Paste apply manifest JSON from Rayenz Hub"></textarea>' +
-            '<button type="button" class="primary" id="rayenz-apply-import">Apply via Import</button>' +
-            '<button type="button" class="ghost" id="rayenz-copy-import">Copy Import Text</button>' +
-            '<div class="status">Deck ID: ' + (deckIdFromUrl() || '?') + '</div>';
-        document.body.appendChild(panel);
-
-        document.getElementById('rayenz-copy-import').addEventListener('click', function () {
-            try {
-                var manifest = parseManifest(document.getElementById('rayenz-manifest').value);
-                var text = importTextFromOperations(opsForCurrentDeck(manifest));
-                navigator.clipboard.writeText(text);
-                setStatus('Import text copied (' + text.split('\n').length + ' lines).');
-            } catch (err) {
-                setStatus(err.message);
-            }
+        document.getElementById('rayenz-dismiss-apply').addEventListener('click', function () {
+            clearStagedApply(deckId);
+            removeBanner();
         });
 
         document.getElementById('rayenz-apply-import').addEventListener('click', async function () {
+            var btn = document.getElementById('rayenz-apply-import');
+            btn.disabled = true;
+            setBannerStatus('Opening Import…');
             try {
-                var manifest = parseManifest(document.getElementById('rayenz-manifest').value);
-                var text = importTextFromOperations(opsForCurrentDeck(manifest));
-                if (!text.trim()) {
-                    throw new Error('No import lines for this deck');
-                }
-                setStatus('Opening Import…');
-                await openImportAndPaste(text);
-                setStatus('Pasted import text. Confirm Save Changes in Archidekt if needed.');
+                await openImportAndPaste(staged.import_text);
+                setBannerStatus('Pasted import text. Choose Replace deck if prompted, then Save Changes.');
             } catch (err) {
-                setStatus(err.message);
+                setBannerStatus(err.message || String(err));
+                btn.disabled = false;
             }
         });
+    }
+
+    function checkPendingApply() {
+        var deckId = deckIdFromUrl();
+        if (!deckId) {
+            return;
+        }
+        var staged = getStagedApply(deckId);
+        if (!staged || !staged.import_text) {
+            return;
+        }
+        buildApplyBanner(deckId, staged);
     }
 
     if (isHubPage()) {
         installHubBridge();
     } else {
-        buildPanel();
+        checkPendingApply();
     }
 })();
