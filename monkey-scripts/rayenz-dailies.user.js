@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Rayenz Dailies Page Augmentation
 // @namespace    neopets.dailies
-// @version      2026-06-21
+// @version      2026-06-21-3
 // @description  Augments Rayenz's custom Neopets dailies page with cross-origin Neopets GET/POST support. For local dev, serve rayenz-akusiom over http://localhost (file:// is blocked by the browser).
 // @author       rayenz-akusiom
 // @match        https://rayenz-akusiom.github.io/rayenz-akusiom/*
@@ -20,7 +20,7 @@
 (function () {
     'use strict';
 
-    if (!document.body || !document.body.hasAttribute('data-neopets-dailies')) {
+    if (!document.body) {
         return;
     }
 

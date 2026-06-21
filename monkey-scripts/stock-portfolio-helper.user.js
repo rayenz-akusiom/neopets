@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Stock Portfolio Helper <Rayenz>
 // @namespace    neopets.stock
-// @version      2026-06-20-3
+// @version      2026-06-20-4
 // @description  Reorganizes the stock portfolio into buy/sell/other sections with quick buy and sell-all actions.
 // @author       rayenz-akusiom
 // @match        https://www.neopets.com/stockmarket.phtml?type=portfolio
@@ -327,6 +327,7 @@
             tbody.appendChild(createSectionHeader(section.title, colspan, {
                 table,
                 sellAll: section.sellAll,
+                sellAllEnabled: section.sellAll && canSellAllButOne(section.items),
             }));
             for (const group of section.items) {
                 tbody.appendChild(group.dataRow);
@@ -381,6 +382,16 @@
         }
     }
 
+    function canSellAllButOne(groups) {
+        return groups.some((g) => g.currentPrice >= SELL_PRICE && g.qty > 1);
+    }
+
+    function getSellAllGroups(table) {
+        return collectStockGroups(table).filter(
+            (g) => g.currentPrice >= SELL_PRICE && g.qty > 1
+        );
+    }
+
     function createSectionHeader(title, colspan, options = {}) {
         const row = document.createElement('tr');
         row.className = 'rayenz-stock-section-header';
@@ -394,8 +405,18 @@
             btn.id = 'rayenz-stock-sell-all';
             btn.type = 'button';
             btn.textContent = 'Sell all but 1';
-            btn.style.cssText = 'float:right;padding:2px 8px;cursor:pointer;font-weight:normal;';
-            btn.addEventListener('click', () => sellAllAboveSellPoint(options.table));
+            btn.style.cssText = 'float:right;padding:2px 8px;font-weight:normal;';
+
+            if (options.sellAllEnabled) {
+                btn.style.cursor = 'pointer';
+                btn.addEventListener('click', () => sellAllAboveSellPoint(options.table));
+            } else {
+                btn.disabled = true;
+                btn.style.cursor = 'not-allowed';
+                btn.style.opacity = '0.6';
+                btn.title = `No stocks at ${SELL_PRICE} NP or above with more than 1 share to sell.`;
+            }
+
             cell.appendChild(btn);
         }
 
@@ -437,9 +458,7 @@
     }
 
     function sellAllAboveSellPoint(table) {
-        const groups = collectStockGroups(table).filter(
-            (g) => g.currentPrice >= SELL_PRICE && g.qty > 1
-        );
+        const groups = getSellAllGroups(table);
 
         if (!groups.length) {
             window.alert(`No stocks at ${SELL_PRICE} NP or above with more than 1 share to sell.`);

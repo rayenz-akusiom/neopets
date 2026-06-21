@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2026-06-20-2
+// @version      2026-06-20-3
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -664,20 +664,27 @@ function parsePaymentItems(petProgressHtml){
 }
 
 function findPaymentItemImage(bold){
-    const cell = bold.closest('td') || bold.parentElement;
-    if (cell) {
-        let lastImg = null;
-        for (const node of cell.querySelectorAll('img[src*="/items/"], b')) {
-            if (node.tagName === 'IMG') {
-                lastImg = node.src;
-            }
-            else if (node === bold && lastImg) {
-                return lastImg;
-            }
+    const name = bold.innerText.trim();
+
+    if (name.includes('Codestone') || name.includes('Dubloon')) {
+        const mapped = getPaymentIcon(name);
+        if (mapped !== PAYMENT_ICON) {
+            return mapped;
         }
     }
 
-    let sibling = bold.previousElementSibling;
+    let sibling = bold.nextElementSibling;
+    while (sibling) {
+        if (sibling.tagName === 'IMG' && sibling.src.includes('/items/')) {
+            return sibling.src;
+        }
+        if (sibling.tagName === 'B') {
+            break;
+        }
+        sibling = sibling.nextElementSibling;
+    }
+
+    sibling = bold.previousElementSibling;
     while (sibling) {
         if (sibling.tagName === 'IMG' && sibling.src.includes('/items/')) {
             return sibling.src;
@@ -685,7 +692,31 @@ function findPaymentItemImage(bold){
         sibling = sibling.previousElementSibling;
     }
 
-    return getPaymentIcon(bold.innerText.trim());
+    const cell = bold.closest('td') || bold.parentElement;
+    if (cell) {
+        const nodes = [...cell.querySelectorAll('img[src*="/items/"], b')];
+        const index = nodes.indexOf(bold);
+        if (index !== -1) {
+            for (let i = index + 1; i < nodes.length; i++) {
+                if (nodes[i].tagName === 'IMG') {
+                    return nodes[i].src;
+                }
+                if (nodes[i].tagName === 'B') {
+                    break;
+                }
+            }
+            for (let i = index - 1; i >= 0; i--) {
+                if (nodes[i].tagName === 'IMG') {
+                    return nodes[i].src;
+                }
+                if (nodes[i].tagName === 'B') {
+                    break;
+                }
+            }
+        }
+    }
+
+    return getPaymentIcon(name);
 }
 
 function aggregatePaymentItems(items){
