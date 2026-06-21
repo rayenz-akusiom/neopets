@@ -1,11 +1,18 @@
 // ==UserScript==
 // @name         Archidekt Deck Review Bridge
 // @namespace    rayenz.hub.deck-review
-// @version      2026-06-21
-// @description  Applies Rayenz Hub deck-review apply manifests on Archidekt deck pages via Import paste automation.
+// @version      2026-06-21.2
+// @description  CORS bridge for Rayenz Hub deck snapshots; applies apply manifests on Archidekt deck pages.
 // @author       rayenz-akusiom
 // @match        https://archidekt.com/decks/*
+// @match        https://rayenz-akusiom.github.io/rayenz-akusiom/*
+// @match        http://localhost/*
+// @match        http://localhost:*/*
+// @match        http://127.0.0.1/*
+// @match        http://127.0.0.1:*/*
 // @grant        GM_addStyle
+// @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -13,6 +20,80 @@
     'use strict';
 
     var PANEL_ID = 'rayenz-archidekt-bridge';
+    var ARCHIDEKT_API = 'https://archidekt.com/api';
+    var USER_AGENT = 'rayenz-hub-bridge/1.0';
+
+    function isHubPage() {
+        return /rayenz-akusiom\.github\.io\/rayenz-akusiom/i.test(location.href) ||
+            /^https?:\/\/localhost(:\d+)?\//i.test(location.href) ||
+            /^https?:\/\/127\.0\.0\.1(:\d+)?\//i.test(location.href);
+    }
+
+    function buildSnapshot(rawDeck) {
+        var cards = [];
+        (rawDeck.cards || []).forEach(function (entry) {
+            if (entry.deletedAt) {
+                return;
+            }
+            var cats = entry.categories || [];
+            var primary = cats.length ? cats[0] : null;
+            var oracle = entry.card && entry.card.oracleCard;
+            var name = oracle && oracle.name;
+            if (!name) {
+                return;
+            }
+            var edition = (entry.card && entry.card.edition) || {};
+            var setCode = edition.editioncode || edition.editionCode;
+            cards.push({
+                name: name,
+                quantity: entry.quantity || 1,
+                set_code: setCode ? String(setCode).toLowerCase() : null,
+                collector_number: entry.card.collectorNumber != null ? String(entry.card.collectorNumber) : null,
+                primary_category: primary,
+                categories: cats,
+                archidekt_uid: entry.uid || null
+            });
+        });
+        return {
+            fetched_at: new Date().toISOString().slice(0, 10),
+            cards: cards
+        };
+    }
+
+    function fetchDeckSnapshot(deckId) {
+        return new Promise(function (resolve, reject) {
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: ARCHIDEKT_API + '/decks/' + deckId + '/',
+                headers: {
+                    Accept: 'application/json',
+                    'User-Agent': USER_AGENT
+                },
+                onload: function (resp) {
+                    if (resp.status < 200 || resp.status >= 300) {
+                        reject(new Error('Archidekt API ' + resp.status + ' for deck ' + deckId));
+                        return;
+                    }
+                    try {
+                        var raw = JSON.parse(resp.responseText);
+                        resolve(buildSnapshot(raw));
+                    } catch (err) {
+                        reject(err);
+                    }
+                },
+                onerror: function () {
+                    reject(new Error('Archidekt request failed for deck ' + deckId));
+                }
+            });
+        });
+    }
+
+    function installHubBridge() {
+        unsafeWindow.RayenzArchidektBridge = {
+            isAvailable: true,
+            fetchDeckSnapshot: fetchDeckSnapshot
+        };
+    }
 
     GM_addStyle(
         '#' + PANEL_ID + ' { position: fixed; bottom: 16px; right: 16px; z-index: 99999; ' +
@@ -78,6 +159,10 @@
         return false;
     }
 
+    function sleep(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+    }
+
     async function openImportAndPaste(text) {
         clickByText('button, a, [role="button"]', 'import');
         await sleep(400);
@@ -95,10 +180,6 @@
         if (!clickByText('button', 'save')) {
             clickByText('button', 'save changes');
         }
-    }
-
-    function sleep(ms) {
-        return new Promise(function (resolve) { setTimeout(resolve, ms); });
     }
 
     function setStatus(msg) {
@@ -171,5 +252,9 @@
         });
     }
 
-    buildPanel();
+    if (isHubPage()) {
+        installHubBridge();
+    } else {
+        buildPanel();
+    }
 })();
