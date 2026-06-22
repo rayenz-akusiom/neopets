@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Quick Stock At Top <Rayenz>
 // @namespace    neopets.quickstock
-// @version      2026-06-20-2
+// @version      2026-06-22
 // @description  Quick Stock toolbar at the top (submit, check-all) plus default-action sorting for common items.
 // @author       rayenz-akusiom
 // @match        https://www.neopets.com/quickstock.phtml*
@@ -13,6 +13,13 @@
 
 (function () {
     'use strict';
+
+    /** Map sets to keep in inventory for turn-in (not auto-deposit). */
+    const SDB_EXCLUDED_MAP_PREFIXES = [
+        'Secret Laboratory Map ',
+        'Petpet Laboratory Map ',
+        'Forgotten Shore Map',
+    ];
 
     /**
      * Items matching these rules get "Deposit" selected; everything else gets "Stock".
@@ -143,7 +150,7 @@
         link.id = DEFAULT_BTN_ID;
         link.href = '#';
         link.textContent = 'Default Actions';
-        link.title = 'Deposit codestones, dubloons, paint brushes, and stat boosters; stock everything else';
+        link.title = 'Deposit codestones, dubloons, paint brushes, stat boosters, and map pieces (except lab / petpet lab / Forgotten Shore); stock everything else';
         link.addEventListener('click', (event) => {
             event.preventDefault();
             applyDefaultActions(form, link);
@@ -246,7 +253,33 @@
             .trim();
     }
 
+    function isExcludedMapPiece(itemName) {
+        return SDB_EXCLUDED_MAP_PREFIXES.some(function (prefix) {
+            return itemName.startsWith(prefix);
+        });
+    }
+
+    function isTreasureMapPiece(itemName) {
+        if (isExcludedMapPiece(itemName)) {
+            return false;
+        }
+        if (itemName === 'Piece of a treasure map') {
+            return true;
+        }
+        if (/Map Piece/i.test(itemName)) {
+            return true;
+        }
+        if (/\bMap [1-9]$/.test(itemName)) {
+            return true;
+        }
+        return false;
+    }
+
     function shouldGoToSdb(itemName) {
+        if (isTreasureMapPiece(itemName)) {
+            return true;
+        }
+
         for (const fragment of DEFAULT_SDB_RULES.nameIncludes) {
             if (itemName.includes(fragment)) {
                 return true;
