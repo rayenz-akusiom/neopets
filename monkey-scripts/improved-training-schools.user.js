@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2026-06-20-3
+// @version      2026-06-23
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -95,6 +95,13 @@ const ROW_COURSES = {
     defence: 'Defence',
 };
 const enrollmentRowSnapshots = new Map();
+const pendingCompletionResults = new Map();
+const COMPLETION_STAT_LABELS = {
+    level: 'Level',
+    strength: 'Strength',
+    defence: 'Defence',
+    hp: 'HP',
+};
 
 /**
  * School Settings (to help with the different schools)
@@ -385,6 +392,7 @@ function determineBadge(petStats){
 
 function submitCourse(petName, stat){
     const rowId = COURSE_ROW_IDS[stat];
+    clearCompletionResult(petName);
     clearEnrollmentErrors(petName);
 
     $.ajax({
@@ -584,8 +592,10 @@ function refreshPetCard(petName, pageHtml){
         progressContainer.innerHTML = "";
         setupEnrollmentHandlers(petName);
         syncPaymentCache(petStats);
+        showPendingCompletionResult(petName);
     }
     else {
+        clearCompletionResult(petName);
         teardownEnrollmentHandlers(petName);
         updateProgressCell(petStats);
     }
@@ -832,13 +842,141 @@ function createProgressButton(label, className){
     return button;
 }
 
+function getStoredPetStats(petName){
+    const stored = petStorage.get(petName);
+    if (!stored) {
+        return null;
+    }
+
+    return {
+        level: stored.level,
+        strength: stored.strength,
+        defence: stored.defence,
+        hp: stored.hp,
+    };
+}
+
+function normalStatGain(statId){
+    return statId === 'hp' ? SCHOOL.hpMult : 1;
+}
+
+function buildCompletionResultHtml(oldStats, newStats, completionHtml){
+    const deltas = [];
+    for (const statId of ['level', 'hp', 'strength', 'defence']) {
+        const delta = newStats[statId] - oldStats[statId];
+        if (delta > 0) {
+            deltas.push({
+                label: COMPLETION_STAT_LABELS[statId],
+                from: oldStats[statId],
+                to: newStats[statId],
+                delta,
+                isSuperBonus: delta > normalStatGain(statId),
+            });
+        }
+    }
+
+    if (deltas.length > 0) {
+        let html = '<div class="training-completion-title">Course complete!</div>';
+        for (const change of deltas) {
+            const bonusClass = change.isSuperBonus ? ' training-completion-super-bonus' : '';
+            const bonusTag = change.isSuperBonus
+                ? ' <span class="training-completion-super-bonus-tag">SUPER BONUS!</span>'
+                : '';
+            html += `<div class="training-completion-stat${bonusClass}">${escapeHtml(change.label)}: `
+                + `${change.from} → ${change.to} (+${change.delta})${bonusTag}</div>`;
+        }
+        return wrapCompletionResultHtml(html);
+    }
+
+    const pageText = parseCompletionPageText(completionHtml);
+    if (pageText) {
+        return wrapCompletionResultHtml(`<div class="training-completion-title">Course complete!</div>`
+            + `<div class="training-completion-stat">${escapeHtml(pageText)}</div>`);
+    }
+
+    return wrapCompletionResultHtml('<div class="training-completion-title">Course complete!</div>');
+}
+
+function parseCompletionPageText(completionHtml){
+    if (!completionHtml || typeof completionHtml !== 'string') {
+        return null;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = completionHtml;
+    const content = wrapper.querySelector('.content') || wrapper;
+    const lines = content.innerText
+        .split(/\n+/)
+        .map(line => line.trim())
+        .filter(line => line.length > 5 && line.length < 300);
+
+    for (const line of lines) {
+        if (/super bonus|gained|increased|now has|level is now|hit points|strength|defence|defense|endurance/i.test(line)
+            && !/training school|status|click here|back to/i.test(line)) {
+            return line;
+        }
+    }
+
+    return null;
+}
+
+function wrapCompletionResultHtml(bodyHtml){
+    return `<div class="training-completion-result">${bodyHtml}</div>`;
+}
+
+function showPendingCompletionResult(petName){
+    const resultHtml = pendingCompletionResults.get(petName);
+    if (!resultHtml) {
+        return;
+    }
+
+    const progressContainer = document.getElementById(`progress-${petName}`);
+    if (progressContainer) {
+        progressContainer.innerHTML = resultHtml;
+    }
+}
+
+function clearCompletionResult(petName){
+    pendingCompletionResults.delete(petName);
+    const progressContainer = document.getElementById(`progress-${petName}`);
+    if (progressContainer?.querySelector('.training-completion-result')) {
+        progressContainer.innerHTML = '';
+    }
+}
+
 async function completeAndRefresh(petName){
-    await processCourse(petName, 'complete');
+    const oldStats = getStoredPetStats(petName);
+    const completionHtml = await processCourse(petName, 'complete');
     const html = await fetchStatusPage();
+
+    const dataWrapper = document.createElement('div');
+    dataWrapper.innerHTML = html;
+    const newPetStats = getPets(dataWrapper).get(petName);
+
+    if (oldStats && newPetStats) {
+        pendingCompletionResults.set(
+            petName,
+            buildCompletionResultHtml(oldStats, newPetStats, completionHtml),
+        );
+    }
+    else {
+        const pageText = parseCompletionPageText(completionHtml);
+        if (pageText) {
+            pendingCompletionResults.set(
+                petName,
+                wrapCompletionResultHtml(
+                    `<div class="training-completion-title">Course complete!</div>`
+                    + `<div class="training-completion-stat">${escapeHtml(pageText)}</div>`,
+                ),
+            );
+        }
+    }
+
     refreshPetCard(petName, html);
 }
 
 async function payAndRefresh(petName){
+    clearCompletionResult(petName);
     await processCourse(petName, 'pay');
     const html = await fetchStatusPage();
     refreshPetCard(petName, html);
@@ -1178,6 +1316,7 @@ function updateProgressCell(petStats){
 
         const cancelBtn = createProgressButton('Cancel', 'cancel-course');
         cancelBtn.onclick = async () => {
+            clearCompletionResult(petStats.name);
             await processCourse(petStats.name, 'cancel');
             const html = await fetchStatusPage();
             refreshPetCard(petStats.name, html);
@@ -1389,6 +1528,27 @@ function setUpClasses(){
         display: block;
         text-align: left;
         white-space: normal;
+      }
+      .training-completion-result {
+        padding: 10px 8px 8px;
+        text-align: center;
+      }
+      .training-completion-title {
+        font-weight: bold;
+        margin-bottom: 6px;
+      }
+      .training-completion-stat {
+        font-size: 10pt;
+        margin: 4px 0;
+        line-height: 1.3;
+      }
+      .training-completion-super-bonus {
+        color: #2d6a1f;
+        font-weight: bold;
+      }
+      .training-completion-super-bonus-tag {
+        color: #b8860b;
+        font-weight: bold;
       }
       `
     ;
