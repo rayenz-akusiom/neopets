@@ -1,6 +1,6 @@
 # Rayenz Hub tests
 
-Automated tests for the [rayenz-akusiom](../rayenz-akusiom/) hub live in this folder at the **parent repo root**, not inside the submodule. Test files must never be added under `rayenz-akusiom/`.
+Automated tests for the [rayenz-hub](../rayenz-hub/) hub live in this folder at the **parent repo root**, not inside the hub source tree. Test files must never be added under `rayenz-hub/`.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ tests/
     hub/                    # Hub app tests
     userscripts/            # Reserved for Tampermonkey script tests
   e2e/
-    static-server.mjs       # Serves rayenz-akusiom/ over HTTP
+    static-server.mjs       # Serves rayenz-hub/ over HTTP
     hub-navigation.spec.js  # Real-browser navigation regression
 ```
 
@@ -39,4 +39,4 @@ The hub re-injects `dailies.html` when switching routes. `dailies.js` must re-ru
 
 ## Future: userscripts
 
-`tests/unit/userscripts/` is reserved for tests of `monkey-scripts/*.user.js` (e.g. training school completion parsing). A future helper can stub `GM_*`, jQuery, and `fetch` without touching the hub submodule.
+`tests/unit/userscripts/` is reserved for tests of `monkey-scripts/*.user.js` (e.g. training school completion parsing). A future helper can stub `GM_*`, jQuery, and `fetch` without touching the hub source tree.

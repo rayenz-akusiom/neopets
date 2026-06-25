@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '../../rayenz-akusiom');
+const ROOT = path.resolve(__dirname, '../../rayenz-hub');
 const PORT = Number(process.env.HUB_TEST_PORT || 4173);
 
 const MIME = {

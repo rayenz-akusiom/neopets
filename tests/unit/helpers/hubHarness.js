@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(__dirname, '../../..');
-export const HUB_ROOT = path.join(REPO_ROOT, 'rayenz-akusiom');
+export const HUB_ROOT = path.join(REPO_ROOT, 'rayenz-hub');
 
 export function readHubFile(relativePath) {
    return fs.readFileSync(path.join(HUB_ROOT, relativePath), 'utf8');
