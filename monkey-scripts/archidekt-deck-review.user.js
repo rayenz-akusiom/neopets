@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Archidekt Deck Review Bridge
 // @namespace    rayenz.hub.deck-review
-// @version      2026-06-21.5
+// @version      2026-06-25-2
 // @description  CORS bridge for Rayenz Hub deck snapshots; stages full-deck apply on Archidekt deck pages.
 // @author       rayenz-akusiom
 // @match        https://archidekt.com/decks/*
@@ -66,6 +66,7 @@
             }
             var edition = (entry.card && entry.card.edition) || {};
             var setCode = edition.editioncode || edition.editionCode;
+            var colorIdentity = (oracle && oracle.colorIdentity) || [];
             cards.push({
                 name: name,
                 quantity: entry.quantity || 1,
@@ -73,6 +74,7 @@
                 collector_number: entry.card.collectorNumber != null ? String(entry.card.collectorNumber) : null,
                 primary_category: primary,
                 categories: cats,
+                color_identity: Array.isArray(colorIdentity) ? colorIdentity.slice() : [],
                 archidekt_uid: entry.uid || null
             });
         });
@@ -83,32 +85,68 @@
         };
     }
 
-    function fetchDeckSnapshot(deckId) {
+    function fetchJson(url) {
         return new Promise(function (resolve, reject) {
             GM_xmlhttpRequest({
                 method: 'GET',
-                url: ARCHIDEKT_API + '/decks/' + deckId + '/',
+                url: url,
                 headers: {
                     Accept: 'application/json',
                     'User-Agent': USER_AGENT
                 },
                 onload: function (resp) {
                     if (resp.status < 200 || resp.status >= 300) {
-                        reject(new Error('Archidekt API ' + resp.status + ' for deck ' + deckId));
+                        reject(new Error('Archidekt API ' + resp.status + ' for ' + url));
                         return;
                     }
                     try {
-                        var raw = JSON.parse(resp.responseText);
-                        resolve(buildSnapshot(raw));
+                        resolve(JSON.parse(resp.responseText));
                     } catch (err) {
                         reject(err);
                     }
                 },
                 onerror: function () {
-                    reject(new Error('Archidekt request failed for deck ' + deckId));
+                    reject(new Error('Archidekt request failed for ' + url));
                 }
             });
         });
+    }
+
+    function fetchDeckSnapshot(deckId) {
+        return fetchJson(ARCHIDEKT_API + '/decks/' + deckId + '/').then(function (raw) {
+            return buildSnapshot(raw);
+        });
+    }
+
+    function mapFolderDecks(folderData) {
+        return (folderData.decks || []).map(function (deck) {
+            return {
+                deck_id: String(deck.id),
+                deck_name: deck.name,
+                archidekt_url: 'https://archidekt.com/decks/' + deck.id
+            };
+        });
+    }
+
+    function fetchFolder(folderId) {
+        function loadFolder(id) {
+            return fetchJson(ARCHIDEKT_API + '/decks/folders/' + id + '/').then(function (folder) {
+                var decks = mapFolderDecks(folder);
+                var subs = folder.subfolders || [];
+                if (!subs.length) {
+                    return decks;
+                }
+                return Promise.all(subs.map(function (sub) {
+                    return loadFolder(sub.id);
+                })).then(function (nested) {
+                    nested.forEach(function (list) {
+                        decks = decks.concat(list);
+                    });
+                    return decks;
+                });
+            });
+        }
+        return loadFolder(folderId);
     }
 
     function stageApply(deckId, importText) {
@@ -149,6 +187,7 @@
             isAvailable: true,
             canApply: true,
             fetchDeckSnapshot: fetchDeckSnapshot,
+            fetchFolder: fetchFolder,
             stageApply: stageApply,
             clearStagedApply: clearStagedApply,
             APPLY_STORAGE_PREFIX: APPLY_STORAGE_PREFIX
