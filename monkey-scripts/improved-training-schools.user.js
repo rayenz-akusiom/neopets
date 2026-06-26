@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2026-06-23
+// @version      2026-06-25
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -28,7 +28,8 @@
  * - Pets not training are still happy! Isn't that nice :)
  * - Recommends next stat based on an even leveling strategy, respecting boost maxes.
  * - No page refresh between enroll, pay, complete, or SDB withdrawal
- * - SDB links with auto-fill for codestones/dubloons and Move to Inventory preselect
+ * - Shop Wizard search links on payment tiles (Super Shop Wizard when premium)
+ * - SDB shortcut with auto-fill for codestones/dubloons and Move to Inventory preselect
  */
 
 /**
@@ -782,9 +783,28 @@ function getSdbCategory(itemName){
     return itemName.includes('Codestone') ? 2 : 3;
 }
 
-function getSdbUrl(itemName){
-    const category = getSdbCategory(itemName);
-    return `https://www.neopets.com/safetydeposit.phtml?obj_name=${encodeURIComponent(itemName)}&category=${category}`;
+function isSuperShopWizardAvailable(){
+    return !!(document.querySelector('#searchstr') && document.querySelector('#ssw-criteria'));
+}
+
+function getShopWizardUrl(itemName){
+    return `https://www.neopets.com/shops/wizard.phtml?string=${encodeURIComponent(itemName)}`;
+}
+
+function getSdbCategoryUrl(costs){
+    const firstName = Object.keys(costs)[0] || '';
+    const category = getSdbCategory(firstName);
+    return `https://www.neopets.com/safetydeposit.phtml?obj_name=&category=${category}`;
+}
+
+function openSuperShopWizard(itemName){
+    const bar = $("[class^='ssw-header']");
+    if (bar.length) {
+        bar.last().parent().show();
+    }
+    $("#ssw-button-new-search").click();
+    $("#ssw-criteria").val("exact");
+    $("#searchstr").val(itemName);
 }
 
 function getPaymentIcon(itemName){
@@ -811,10 +831,16 @@ function createPaymentTileGrid(petName, costs, paymentItems){
 function createPaymentTile(petName, costs, item){
     const link = document.createElement('a');
     link.classList.add('training-payment-tile');
-    link.href = getSdbUrl(item.name);
+    link.href = getShopWizardUrl(item.name);
     link.target = '_blank';
-    link.title = `${item.name} — open in Safety Deposit Box`;
-    link.onclick = () => storePaymentForPet(petName, costs);
+    link.title = `${item.name} — search Shop Wizard`;
+    link.onclick = (e) => {
+        storePaymentForPet(petName, costs);
+        if (isSuperShopWizardAvailable()) {
+            e.preventDefault();
+            openSuperShopWizard(item.name);
+        }
+    };
 
     const inner = document.createElement('div');
     inner.classList.add('training-payment-tile-inner');
@@ -1310,6 +1336,13 @@ function updateProgressCell(petStats){
         const actionRow = document.createElement('div');
         actionRow.classList.add('training-progress-actions');
 
+        const sdbBtn = createProgressButton('SDB', 'sdb-course');
+        sdbBtn.title = costs.some(c => c.includes('Codestone'))
+            ? 'Open codestones in the Safety Deposit Box'
+            : 'Open dubloons in the Safety Deposit Box';
+        sdbBtn.onclick = () => window.open(getSdbCategoryUrl(costsToMap(costs)), '_blank');
+        actionRow.appendChild(sdbBtn);
+
         const payBtn = createProgressButton('Pay', 'pay-course');
         payBtn.onclick = () => payAndRefresh(petStats.name);
         actionRow.appendChild(payBtn);
@@ -1507,6 +1540,9 @@ function setUpClasses(){
       }
       .training-progress-btn.pay-course {
         background-color: #FFD580;
+      }
+      .training-progress-btn.sdb-course {
+        background-color: #E6E4DD;
       }
       .training-needed-count {
         color: #8B0000;
