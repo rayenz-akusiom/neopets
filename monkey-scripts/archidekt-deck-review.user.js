@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Archidekt Deck Review Bridge
 // @namespace    rayenz.hub.deck-review
-// @version      2026-06-25-2
+// @version      2026-06-26
 // @description  CORS bridge for Rayenz Hub deck snapshots; stages full-deck apply on Archidekt deck pages.
 // @author       rayenz-akusiom
 // @match        https://archidekt.com/decks/*
@@ -243,8 +243,23 @@
         if (!ta) {
             throw new Error('Import textarea not found. Open Import manually, then click Apply import again.');
         }
+        setReactTextareaValue(ta, text);
+    }
+
+    // Archidekt's import textarea is a React-controlled input. Assigning `.value`
+    // directly is ignored by React's synthetic event system, so the Save Changes
+    // button stays disabled until the user manually edits the field. Going through
+    // the native value setter and dispatching a real input event makes React pick
+    // up the change and enable Save Changes immediately.
+    function setReactTextareaValue(ta, text) {
+        var proto = window.HTMLTextAreaElement && window.HTMLTextAreaElement.prototype;
+        var descriptor = proto && Object.getOwnPropertyDescriptor(proto, 'value');
         ta.focus();
-        ta.value = text;
+        if (descriptor && descriptor.set) {
+            descriptor.set.call(ta, text);
+        } else {
+            ta.value = text;
+        }
         ta.dispatchEvent(new Event('input', { bubbles: true }));
         ta.dispatchEvent(new Event('change', { bubbles: true }));
     }

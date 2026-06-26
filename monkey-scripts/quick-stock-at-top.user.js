@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Quick Stock At Top <Rayenz>
 // @namespace    neopets.quickstock
-// @version      2026-06-22
+// @version      2026-06-26
 // @description  Quick Stock toolbar at the top (submit, check-all) plus default-action sorting for common items.
 // @author       rayenz-akusiom
 // @match        https://www.neopets.com/quickstock.phtml*
@@ -35,7 +35,9 @@
             /\b(Strength|Defence|Defense|Endurance|Level(?:\s|-)?Up|Hit Points)\b.*\b(Potion|Elixir|Serum|Negg|Drink|Smoothie|Soda|Juice|Shake|Slushie|Cocktail|Tea|Coffee|Chocolate|Cookie|Candy|Bar|Soup|Tonic|Flask|Vial|Beverage|Milkshake|Fizz|Pop|Cola|Muffin|Cake|Grog|Brew|Draught|Mixture|Concoction|Remedy|Medicine|Tablet|Capsule|Powder|Nectar|Ambrosia|Punch|Gummy|Lolly|Marshmallow|Truffle|Bonbon|Ice Cream)/i,
             /\b(Potion|Elixir|Serum|Negg|Drink|Smoothie|Soda|Juice|Shake|Slushie|Cocktail|Tea|Coffee|Chocolate|Cookie|Candy|Bar|Soup|Tonic|Flask|Vial|Beverage|Milkshake|Fizz|Pop|Cola|Muffin|Cake|Grog|Brew|Draught|Mixture|Concoction|Remedy|Medicine|Tablet|Capsule|Powder|Nectar|Ambrosia|Punch|Gummy|Lolly|Marshmallow|Truffle|Bonbon|Ice Cream)\b.*\b(Strength|Defence|Defense|Endurance|Level(?:\s|-)?Up|Hit Points)\b/i,
         ],
-        exactNames: [],
+        exactNames: [
+            'Potion of Void Speed',
+        ],
     };
 
     const QUICKSTOCK_ACTIONS = [
