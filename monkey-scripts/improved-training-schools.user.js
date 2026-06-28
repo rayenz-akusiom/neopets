@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2026-06-25
+// @version      2026-06-27
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -97,6 +97,7 @@ const ROW_COURSES = {
 };
 const enrollmentRowSnapshots = new Map();
 const pendingCompletionResults = new Map();
+const statBaselines = new Map();
 const COMPLETION_STAT_LABELS = {
     level: 'Level',
     strength: 'Strength',
@@ -245,6 +246,8 @@ function replacePetTable(petData)
     petOuterContainer.classList.add("training-outer-container");
 
     for (const [petName, petStats] of petData.entries()){
+        captureStatBaseline(petName, petStats);
+
         let petContainer = document.createElement("div");
         petContainer.id = `petContainer-${petName}`;
         petContainer.classList.add("pet-container");
@@ -581,6 +584,8 @@ function refreshPetCard(petName, pageHtml){
         return;
     }
 
+    captureStatBaseline(petName, petStats);
+
     const stored = petStorage.get(petName) || {};
     petStats.locked = stored.locked || false;
     petStorage.set(petName, { ...stored, ...petStats, locked: petStats.locked });
@@ -868,17 +873,29 @@ function createProgressButton(label, className){
     return button;
 }
 
+function captureStatBaseline(petName, petStats){
+    if (!petStats) {
+        return;
+    }
+    statBaselines.set(petName, {
+        level: petStats.level,
+        strength: petStats.strength,
+        defence: petStats.defence,
+        hp: petStats.hp,
+    });
+}
+
 function getStoredPetStats(petName){
-    const stored = petStorage.get(petName);
-    if (!stored) {
+    const baseline = statBaselines.get(petName);
+    if (!baseline) {
         return null;
     }
 
     return {
-        level: stored.level,
-        strength: stored.strength,
-        defence: stored.defence,
-        hp: stored.hp,
+        level: baseline.level,
+        strength: baseline.strength,
+        defence: baseline.defence,
+        hp: baseline.hp,
     };
 }
 
@@ -1199,7 +1216,7 @@ function getPetStats(petCell){
     stats.recommendNext = recommendNext(stats);
 
     // HSD
-    stats.hsd = stats.hp + Math.min(stats.strength, 750) + Math.min(stats.defence, 750);
+    stats.hsd = stats.hp + Math.min(stats.strength, 850) + Math.min(stats.defence, 850);
 
     return stats;
 }
