@@ -16,6 +16,34 @@ export function runInWindow(code) {
    fn.call(window);
 }
 
+const MODULE_GLOBALS = [
+   'HubUtils',
+   'ArchidektExport',
+   'OrderReconcileExport',
+   'OrderEmailParse',
+   'HubCardPicker',
+   'ProfileSync',
+   'OrderReconcile',
+   'DeckReview',
+];
+
+// Loads one or more hub IIFE files (in dependency order) into the happy-dom
+// window and returns the resulting `window.<globalName>` export. Each entry is
+// a path relative to rayenz-hub/; the last loaded module's global is returned
+// when `globalName` is omitted (best-effort) — prefer passing it explicitly.
+export function loadHubModule(relPaths, globalName) {
+   const list = Array.isArray(relPaths) ? relPaths : [relPaths];
+   list.forEach((relPath) => runInWindow(readHubFile(relPath)));
+   return globalName ? window[globalName] : undefined;
+}
+
+export function resetHubModules() {
+   localStorage.clear();
+   MODULE_GLOBALS.forEach((name) => {
+      delete window[name];
+   });
+}
+
 export function resetDom() {
    document.head.innerHTML = '';
    document.body.innerHTML = '';
