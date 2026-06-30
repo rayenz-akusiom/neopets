@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Improved Training Schools <Rayenz>
 // @description  Adds some much needed useability functions to the training school(s). **Tested in Chrome only!**
-// @version      2026-06-27
+// @version      2026-06-27-2
 // @author       rayenz-akusiom
 // @match        *://*.neopets.com/pirates/academy.phtml?type=status*
 // @match        *://*.neopets.com/island/*training.phtml?*type=status*
@@ -405,26 +405,20 @@ function submitCourse(petName, stat){
         data: `type=start&course_type=${stat}&pet_name=${petName}`,
         timeout: 6000,
         success: function(data) {
-            const postError = parseEnrollmentError(data);
-            if (postError) {
-                showEnrollmentError(petName, rowId, postError);
-                return;
-            }
-
             fetchStatusPage().then(html => {
                 const dataWrapper = document.createElement('div');
                 dataWrapper.innerHTML = html;
                 const petStats = getPets(dataWrapper).get(petName);
 
-                if (!petStats || !enrollmentSucceeded(petStats)) {
-                    const statusError = parseEnrollmentError(html)
-                        || parseEnrollmentError(data)
-                        || 'This stat cannot be trained right now.';
-                    showEnrollmentError(petName, rowId, statusError);
+                if (petStats && enrollmentSucceeded(petStats)) {
+                    refreshPetCard(petName, html);
                     return;
                 }
 
-                refreshPetCard(petName, html);
+                const statusError = parseEnrollmentError(html)
+                    || parseEnrollmentError(data)
+                    || 'This stat cannot be trained right now.';
+                showEnrollmentError(petName, rowId, statusError);
             });
         },
         error: function(xhr, status, error) {
@@ -444,6 +438,14 @@ function isEnrollmentNotice(text){
         || /will not be able to train for 24 hours if you cancel/i.test(text);
 }
 
+function isPetHealthDisplay(text){
+    return /^\d+\s*\/\s*\d+$/.test(text.trim());
+}
+
+function shouldIgnoreEnrollmentText(text){
+    return isEnrollmentNotice(text) || isPetHealthDisplay(text);
+}
+
 function parseEnrollmentError(pageHtml){
     if (!pageHtml || typeof pageHtml !== 'string') {
         return null;
@@ -461,7 +463,7 @@ function parseEnrollmentError(pageHtml){
     ]) {
         for (const el of wrapper.querySelectorAll(selector)) {
             const text = el.innerText.trim();
-            if (text.length > 5 && text.length < 500 && !isEnrollmentNotice(text)) {
+            if (text.length > 5 && text.length < 500 && !shouldIgnoreEnrollmentText(text)) {
                 return text;
             }
         }
@@ -481,7 +483,7 @@ function parseEnrollmentError(pageHtml){
 
     for (const pattern of patterns) {
         const match = content.innerText.match(pattern);
-        if (match && !isEnrollmentNotice(match[0])) {
+        if (match && !shouldIgnoreEnrollmentText(match[0])) {
             return match[0].trim();
         }
     }
@@ -490,7 +492,7 @@ function parseEnrollmentError(pageHtml){
         const text = el.innerText.trim();
         if (text.length > 5
             && text.length < 300
-            && !isEnrollmentNotice(text)
+            && !shouldIgnoreEnrollmentText(text)
             && /cannot|too high|must train|already|not allowed|graduated|before you can/i.test(text)) {
             return text;
         }
@@ -1209,7 +1211,7 @@ function getPetStats(petCell){
         level: Number(rawStats[0].innerHTML),
         strength: Number(rawStats[1].innerHTML),
         defence: Number(rawStats[2].innerHTML),
-        hp: Number(rawStats[4].innerHTML.split("/")[1]),
+        hp: parseMaxHp(rawStats),
     }
 
     // Figure out the next stat
@@ -1219,6 +1221,25 @@ function getPetStats(petCell){
     stats.hsd = stats.hp + Math.min(stats.strength, 850) + Math.min(stats.defence, 850);
 
     return stats;
+}
+
+function parseMaxHp(rawStats){
+    const hpBold = rawStats[4];
+    if (!hpBold) {
+        return NaN;
+    }
+
+    const hpText = hpBold.innerHTML.trim();
+    if (hpText.includes('/')) {
+        return Number(hpText.split('/').pop());
+    }
+
+    const maxBold = rawStats[5];
+    if (maxBold && /^\d+$/.test(hpText) && /^\d+$/.test(maxBold.innerHTML.trim())) {
+        return Number(maxBold.innerHTML.trim());
+    }
+
+    return Number(hpText);
 }
 
 /**
