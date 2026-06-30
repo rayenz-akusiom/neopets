@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Quick Stock At Top <Rayenz>
 // @namespace    neopets.quickstock
-// @version      2026-06-26
+// @version      2026-06-26-2
 // @description  Quick Stock toolbar at the top (submit, check-all) plus default-action sorting for common items.
 // @author       rayenz-akusiom
 // @match        https://www.neopets.com/quickstock.phtml*
@@ -37,6 +37,7 @@
         ],
         exactNames: [
             'Potion of Void Speed',
+            'Therapeutic Swamp Water',
         ],
     };
 
