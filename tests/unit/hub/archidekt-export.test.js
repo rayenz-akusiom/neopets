@@ -38,9 +38,9 @@ describe('ArchidektExport.formatImportLine', () => {
          .toBe('1x Sol Ring (cmm) [Ramp]');
    });
 
-   it('suppresses the bracket for basic lands', () => {
-      expect(ArchidektExport.formatImportLine(1, 'Forest', 'xyz', '1', 'Land', null, null))
-         .toBe('1x Forest (xyz) 1');
+   it('emits the full category list for basic lands', () => {
+      expect(ArchidektExport.formatImportLine(1, 'Forest', 'xyz', '1', ['Land', 'Proxies'], { Proxies: { includedInPrice: false } }, null))
+         .toBe('1x Forest (xyz) 1 [Land,Proxies{noPrice}]');
    });
 });
 
@@ -67,6 +67,27 @@ describe('ArchidektExport.formatCategoryBracket', () => {
       const settings = { Ramp: { includedInDeck: false, includedInPrice: false } };
       expect(ArchidektExport.formatCategoryBracket('Ramp', 'Sol Ring', settings))
          .toBe(' [Ramp{noDeck}{noPrice}]');
+   });
+});
+
+describe('ArchidektExport.formatCategoriesBracket', () => {
+   it('joins multiple categories with per-category flags', () => {
+      const settings = { Proxies: { includedInPrice: false, includedInDeck: true } };
+      expect(ArchidektExport.formatCategoriesBracket(['Land', 'Proxies'], 'Plateau', settings))
+         .toBe(' [Land,Proxies{noPrice}]');
+   });
+
+   it('formats Boros + Proxies like the cube import syntax', () => {
+      const settings = { Proxies: { includedInPrice: false, includedInDeck: true } };
+      expect(ArchidektExport.formatCategoriesBracket(['Boros', 'Proxies'], 'Ajani', settings))
+         .toBe(' [Boros,Proxies{noPrice}]');
+   });
+});
+
+describe('ArchidektExport.appendCategory', () => {
+   it('appends a category without duplicating it', () => {
+      expect(ArchidektExport.appendCategory(['Boros'], 'Proxies')).toEqual(['Boros', 'Proxies']);
+      expect(ArchidektExport.appendCategory(['Boros', 'Proxies'], 'Proxies')).toEqual(['Boros', 'Proxies']);
    });
 });
 
@@ -128,6 +149,28 @@ describe('ArchidektExport.buildFullDeckImport', () => {
 
    it('returns empty string for a deck without a snapshot', () => {
       expect(ArchidektExport.buildFullDeckImport({ deck_id: 'x' }, accepted)).toBe('');
+   });
+
+   it('preserves dual categories from the snapshot on unchanged cards', () => {
+      const proxyDeck = {
+         deck_id: 'cube',
+         archidekt_url: 'https://archidekt.com/decks/999/cube',
+         deck_snapshot: {
+            category_settings: { Proxies: { includedInPrice: false, includedInDeck: true } },
+            cards: [
+               {
+                  name: 'Plateau',
+                  set_code: 'vma',
+                  collector_number: '308',
+                  quantity: 1,
+                  primary_category: 'Land',
+                  categories: ['Land', 'Proxies'],
+               },
+            ],
+         },
+      };
+      const text = ArchidektExport.buildFullDeckImport(proxyDeck, []);
+      expect(text).toContain('1x Plateau (vma) 308 [Land,Proxies{noPrice}]');
    });
 });
 

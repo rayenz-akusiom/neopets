@@ -171,6 +171,53 @@ describe('OrderReconcileExport.buildReconcileDeckImport', () => {
       expect(text).toContain('1x MB Card (mb) 1 [Ramp]');
       expect(text).not.toContain('Maybeboard');
    });
+
+   it('preserves dual categories from the snapshot on unchanged cards', () => {
+      const snapshotWithProxy = {
+         category_settings: { Proxies: { includedInPrice: false, includedInDeck: true } },
+         cards: [
+            {
+               name: 'Plateau',
+               set_code: 'vma',
+               collector_number: '308',
+               quantity: 1,
+               primary_category: 'Land',
+               categories: ['Land', 'Proxies'],
+            },
+            { name: 'Queue In', primary_category: 'New Set In', quantity: 1, set_code: 'qin', collector_number: '1' },
+            { name: 'Queue Out', primary_category: 'New Set Out', quantity: 1, set_code: 'qout', collector_number: '1' },
+         ],
+      };
+      const text = ORE.buildReconcileDeckImport('d1', snapshotWithProxy, [], []);
+      expect(text).toContain('1x Plateau (vma) 308 [Land,Proxies{noPrice}]');
+   });
+
+   it('appends Proxies to accepted card-in lines when isProxyOrder is set', () => {
+      const cubeSnapshot = {
+         category_settings: { Proxies: { includedInPrice: false, includedInDeck: true } },
+         cards: [
+            { name: 'Keeper', set_code: 'aaa', collector_number: '1', quantity: 1, primary_category: 'Azorius' },
+         ],
+      };
+      const accepted = [{
+         status: 'accepted',
+         slot_key: 'slot-1',
+         accepted: {
+            card_in: { name: 'Sol Ring', set_code: 'cmm', collector_number: '1' },
+            destination_category: 'Azorius',
+            quantity: 1,
+            card_out: null,
+         },
+      }];
+      const text = ORE.buildReconcileDeckImport('d1', cubeSnapshot, accepted, accepted, { isProxyOrder: true });
+      expect(text).toContain('1x Sol Ring (cmm) 1 [Azorius,Proxies{noPrice}]');
+   });
+
+   it('does not append Proxies when isProxyOrder is false', () => {
+      const text = ORE.buildReconcileDeckImport('d1', snapshot, acceptedItems, acceptedItems, { isProxyOrder: false });
+      expect(text).toContain('1x Sol Ring (cmm) 1 *F* [Ramp]');
+      expect(text).not.toContain('Proxies');
+   });
 });
 
 describe('OrderReconcileExport.buildStagingCleanupImport', () => {
