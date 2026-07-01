@@ -1,6 +1,6 @@
 # Rayenz Hub tests
 
-Automated tests for the [rayenz-hub](../rayenz-hub/) hub live in this folder at the **parent repo root**, not inside the hub source tree. Test files must never be added under `rayenz-hub/`.
+Automated tests for the [rayenz-hub](../rayenz-hub/) hub live in this folder at the **monorepo root** ([rayenz-akusiom/rayenz-hub](https://github.com/rayenz-akusiom/rayenz-hub)), not inside the hub source tree. Test files must never be added under `rayenz-hub/`.
 
 ## Prerequisites
 

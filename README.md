@@ -1,13 +1,13 @@
-# Neopets userscripts
+# Rayenz Hub
 
-Tampermonkey/Greasemonkey scripts for Neopets quality-of-life and automation.
+Monorepo for [Rayenz Hub](https://rayenz-akusiom.github.io/rayenz-akusiom/) (Dailies, Deck Review, Order Reconcile), Neopets Tampermonkey userscripts, and the hub test harness.
 
 ## Layout
 
 | Path | Purpose |
 |------|---------|
-| `monkey-scripts/` | Userscripts — edit and push here |
-| `rayenz-hub/` | Rayenz Hub source (dev/staging): Dailies, Deck Review |
+| `rayenz-hub/` | Hub source (dev/staging): Dailies, Deck Review, Order Reconcile |
+| `monkey-scripts/` | Neopets userscripts — edit and push here |
 | `tests/` | Hub test harness (Vitest + Playwright) |
 
 Production hub is deployed separately to [rayenz-akusiom.github.io/rayenz-akusiom](https://rayenz-akusiom.github.io/rayenz-akusiom/) via `git subtree push`.
@@ -15,14 +15,14 @@ Production hub is deployed separately to [rayenz-akusiom.github.io/rayenz-akusio
 ## Clone
 
 ```bash
-git clone https://github.com/rayenz-akusiom/neopets.git
+git clone https://github.com/rayenz-akusiom/rayenz-hub.git
 ```
 
 ## Publishing
 
-**Userscripts** — commit and push to `neopets` `main`. No GitHub Pages deploy.
+**Userscripts** — commit and push to `rayenz-hub` `main`. No GitHub Pages deploy.
 
-**Hub (Dailies / Deck Review)** — edit under `rayenz-hub/`, commit to `neopets` `main`, then deploy to production:
+**Hub (Dailies / Deck Review / Order Reconcile)** — edit under `rayenz-hub/`, commit to `rayenz-hub` `main`, then deploy to production:
 
 ```bash
 # After committing hub changes in this repo:
