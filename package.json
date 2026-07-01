@@ -8,6 +8,7 @@
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
+    "extract:suggestion-fixture": "node tests/scripts/extract-suggestion-fixture.mjs",
     "deploy:hub": "git subtree push --prefix=rayenz-hub hub-prod main"
   },
   "devDependencies": {
