@@ -1,0 +1,36 @@
+---
+description: Version format for Greasemonkey/Tampermonkey userscripts in monkey-scripts/
+globs: monkey-scripts/**/*.user.js
+alwaysApply: false
+---
+
+# Greasemonkey script versioning
+
+Use the `@version` metadata field in `// ==UserScript==` headers.
+
+## Format
+
+- **First edit on a day**: `YYYY-MM-DD` (e.g. `2026-06-20`)
+- **Second edit same day**: `YYYY-MM-DD-2`
+- **Third edit same day**: `YYYY-MM-DD-3`
+- Continue incrementing the suffix for each additional edit that day.
+
+The suffix counts **per script file**, not across the repo.
+
+## When to bump
+
+Update `@version` whenever you change a userscript, including bug fixes, refactors, and new features.
+
+## Examples
+
+```javascript
+// @version      2026-06-20      // first change that day
+// @version      2026-06-20-2    // second change that day
+// @version      2026-06-21      // first change on a new day (reset; no suffix)
+```
+
+## Do not use
+
+- Semantic versions (`1.2.3`)
+- Bare dates that do not match the edit day
+- Reusing the same version after making changes
