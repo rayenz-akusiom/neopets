@@ -1,0 +1,48 @@
+---
+description: Long-running Hub work uses shared HubProgress under the sticky header
+globs: rayenz-hub/apps/**/*.{js,css,html},rayenz-hub/shared/**/*.{js,css}
+alwaysApply: false
+---
+
+# Shared progress bar (default)
+
+Multi-step or long-running operations use `HubProgress` (`rayenz-hub/shared/hub-progress.js`), mounted on a `.hub-progress-host` **directly under the app header** inside `.hub-sticky-chrome`.
+
+## Default pattern
+
+1. Shell template includes `<div class="hub-progress-host" id="…-progress-host"></div>` after the header.
+2. On app load: `state.ui.progress = HubUtils.mountAppProgress(hostEl, appName)`.
+3. Use `start` → `update` (with `current` / `total` when known) → `finish` → user `dismiss`.
+4. **Multi-step / long-running** primary progress must use `HubProgress`. Complementary one-line status in-panel (validation, idle Ready, copy feedback) is fine when listed under **Documented overrides**.
+
+```javascript
+var progress = state.ui.progress;
+progress.start({ label: 'Loading…' });
+progress.update({ current: 2, total: 5, label: 'Step 2 of 5…' });
+progress.finish({ label: 'Done.', variant: 'success' });
+```
+
+Reference: Deck Suggest generate, Deck Review refresh, Order Reconcile fetch, Dailies batch automation.
+
+## Overrides
+
+To deviate from the default for primary progress (text-only batch status, fixed viewport bar, no progress host, etc.):
+
+1. Add a row under **Documented overrides** below **in the same change** as the code.
+2. Use the standard row format. Unlisted deviations are not allowed.
+
+Row format:
+
+`- **{App}** — \`{file or symbol}\` — {what uses non-default pattern} — {why} (added: YYYY-MM-DD)`
+
+## Documented overrides
+
+- **Deck Review** — `setProfileStatus` in `dr-profiles.js`, `dr-render.js` — profile connect, bridge hint, staging banner — short messages only; deck refresh uses `HubProgress` (added: 2026-06-30)
+- **Order Reconcile** — `#or-status` / `OR.setStatus` in `order-reconcile.js` — ephemeral feedback (settings saved, copy applied, Scryfall miss) — deck fetch uses `HubProgress` (added: 2026-06-30)
+- **Dailies** — `.automated-status` in `dailies.js` — idle Ready, validation, and per-section errors — Coco Shy / Wishing Well batch progress uses header `HubProgress` (added: 2026-06-30)
+
+## Enforcement
+
+- New long-running flows must use `HubProgress` unless listed above.
+- New override: edit this `.mdc` file in the same PR; do not add silent exceptions in code only.
+- When reviewing diffs under `apps/**`, check progress patterns against **Documented overrides**.

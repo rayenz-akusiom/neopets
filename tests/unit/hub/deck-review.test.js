@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadHubModule, resetHubModules } from '../helpers/hubHarness.js';
 
 let DR;
 
 const FILES = [
+   'shared/storage.js',
    'shared/hub-utils.js',
    'shared/swap-queue.js',
    'apps/deck-review/archidekt-export.js',
@@ -159,5 +160,143 @@ describe('DeckReview.acceptedForDeck', () => {
       const accepted = DR.acceptedForDeck('d1');
       expect(accepted).toHaveLength(1);
       expect(accepted[0].card_in.name).toBe('New Card');
+   });
+});
+
+describe('DeckReview handoff and transferSource', () => {
+   const sampleData = {
+      meta: { schema_version: '1.1', set_code: 'MSH', set_name: 'MSH', generated_at: '2026-06-30' },
+      decks: [{
+         deck_id: 'd1',
+         deck_name: 'Test',
+         suggestions: [{
+            suggestion_id: 's1',
+            priority_tier: 'swap',
+            confidence: 'high',
+            action: 'replace',
+            card: { name: 'Card', set_code: 'MSH', collector_number: '1' },
+            replaces: [],
+         }],
+      }],
+   };
+
+   it('loadSuggestionsData loads validated data', () => {
+      DR.state.ui = {
+         metaEl: document.createElement('div'),
+         emptyState: document.createElement('div'),
+         content: document.createElement('div'),
+         deckList: document.createElement('div'),
+         suggestionPanel: document.createElement('div'),
+         downloadJsonBtn: document.createElement('button'),
+      };
+      DR.renderDeckList = () => {};
+      DR.renderSuggestionPanel = () => {};
+      DR.renderProfilesNav = () => {};
+      DR.loadSuggestionsData(sampleData);
+      expect(DR.state.data.decks).toHaveLength(1);
+      expect(DR.state.fileId).toBe('MSH-2026-06-30');
+   });
+
+   it('updateTransferNav shows download when transferSource is deck-suggest', () => {
+      DR.state.transferSource = 'deck-suggest';
+      DR.state.ui = { downloadJsonBtn: { hidden: true } };
+      Object.defineProperty(DR.state.ui.downloadJsonBtn, 'hidden', {
+         writable: true,
+         value: true,
+      });
+      DR.updateTransferNav();
+      expect(DR.state.ui.downloadJsonBtn.hidden).toBe(false);
+   });
+
+   it('updateTransferNav relabels refresh button for deck-suggest handoff', () => {
+      DR.state.transferSource = 'deck-suggest';
+      const btn = document.createElement('button');
+      btn.textContent = 'Refresh all decks';
+      DR.state.ui = { refreshAllDecksBtn: btn };
+      DR.updateTransferNav();
+      expect(btn.textContent).toBe('Refresh from Archidekt (optional)');
+   });
+
+   it('handoff with snapshots is reported as all ready', () => {
+      const data = {
+         decks: [{
+            deck_snapshot: { cards: [{ name: 'Sol Ring' }] },
+            suggestions: [{ suggestion_id: 's1' }],
+         }],
+      };
+      expect(HubUtils.handoffSnapshotSummary(data).allReady).toBe(true);
+   });
+
+   it('loadSuggestionsData preserves deck_snapshot from handoff payload', () => {
+      const dataWithSnapshot = {
+         meta: { schema_version: '1.1', set_code: 'MSH', set_name: 'MSH', generated_at: '2026-06-30' },
+         decks: [{
+            deck_id: 'd1',
+            deck_name: 'Test',
+            deck_snapshot: { fetched_at: '2026-06-22', cards: [{ name: 'Sol Ring', primary_category: 'Ramp' }] },
+            suggestions: [{
+               suggestion_id: 's1',
+               priority_tier: 'swap',
+               confidence: 'high',
+               action: 'replace',
+               card: { name: 'Card', set_code: 'MSH', collector_number: '1' },
+               replaces: [],
+            }],
+         }],
+      };
+      DR.state.ui = {
+         metaEl: document.createElement('div'),
+         emptyState: document.createElement('div'),
+         content: document.createElement('div'),
+         deckList: document.createElement('div'),
+         suggestionPanel: document.createElement('div'),
+         downloadJsonBtn: document.createElement('button'),
+      };
+      DR.renderDeckList = () => {};
+      DR.renderSuggestionPanel = () => {};
+      DR.renderProfilesNav = () => {};
+      DR.loadSuggestionsData(dataWithSnapshot);
+      expect(DR.state.data.decks[0].deck_snapshot.cards).toHaveLength(1);
+      expect(DR.state.data.decks[0].deck_snapshot.fetched_at).toBe('2026-06-22');
+   });
+
+   it('loadDeckReviewApp loads handoff without fetching latest.json', async () => {
+      HubStorage.saveReviewHandoff({
+         data: sampleData,
+         source: 'deck-suggest',
+         savedAt: '2026-06-30T12:00:00.000Z',
+      });
+      const fetchSpy = vi.fn(async () => ({
+         ok: false,
+         status: 404,
+         json: () => Promise.resolve({}),
+      }));
+      global.fetch = fetchSpy;
+
+      DR.updateProfilesConnectionStatus = () => {};
+      DR.renderProfilesNav = () => {};
+      DR.renderDeckList = () => {};
+      DR.renderSuggestionPanel = () => Promise.resolve();
+
+      const root = document.createElement('div');
+      document.body.appendChild(root);
+      await window.loadDeckReviewApp(root);
+
+      expect(DR.state.data.decks).toHaveLength(1);
+      expect(DR.state.transferSource).toBe('deck-suggest');
+      const latestCalls = fetchSpy.mock.calls.filter(function (call) {
+         return String(call[0]).indexOf('latest.json') >= 0;
+      });
+      expect(latestCalls).toHaveLength(0);
+      expect(document.getElementById('dr-content').hidden).toBe(false);
+   });
+});
+
+describe('HubUtils suggestions download', () => {
+   it('builds export filename from meta', () => {
+      const name = HubUtils.suggestionsExportFilename({
+         meta: { set_code: 'msh', generated_at: '2026-06-30' },
+      });
+      expect(name).toBe('MSH-2026-06-30-rules.json');
    });
 });

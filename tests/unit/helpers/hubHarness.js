@@ -27,6 +27,7 @@ const MODULE_GLOBALS = [
    'DeckReview',
    'DeckSuggest',
    'SwapQueue',
+   'HubProgress',
 ];
 
 // Loads one or more hub IIFE files (in dependency order) into the happy-dom
@@ -41,6 +42,12 @@ export function loadHubModule(relPaths, globalName) {
 
 export function resetHubModules() {
    localStorage.clear();
+   try {
+      sessionStorage.clear();
+   } catch (e) {
+      /* ignore */
+   }
+   delete window.__hubReviewHandoff;
    MODULE_GLOBALS.forEach((name) => {
       delete window[name];
    });

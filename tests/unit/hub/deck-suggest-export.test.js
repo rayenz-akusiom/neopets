@@ -59,4 +59,28 @@ describe('deck-suggest export', () => {
       expect(validated.meta.notes).toContain('Deck Suggest');
       expect(validated.decks[0].suggestions.length).toBeGreaterThan(0);
    });
+
+   it('buildSummary aggregates deck results', () => {
+      const summary = DS.Export.buildSummary(DS.state);
+      expect(summary).not.toBe(null);
+      expect(summary.totalSuggestions).toBeGreaterThan(0);
+      expect(summary.deckRows).toHaveLength(1);
+      expect(summary.poolSize).toBe(DS.state.setScope.cards.length);
+   });
+
+   it('hasReviewableSuggestions is true when export has suggestions', () => {
+      expect(DS.Export.hasReviewableSuggestions(DS.state)).toBe(true);
+   });
+
+   it('hasReviewableSuggestions is false without generation run', () => {
+      DS.state.generationRun = null;
+      expect(DS.Export.hasReviewableSuggestions(DS.state)).toBe(false);
+   });
+
+   it('buildExport retains deck_snapshot from generation', () => {
+      const exported = DS.Export.buildExport(DS.state);
+      expect(exported.decks[0].deck_snapshot).toBeTruthy();
+      expect(exported.decks[0].deck_snapshot.cards.length).toBeGreaterThan(0);
+      expect(exported.decks[0].deck_snapshot.fetched_at).toBe('2026-06-22');
+   });
 });

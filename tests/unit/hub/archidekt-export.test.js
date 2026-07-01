@@ -12,6 +12,40 @@ afterEach(() => {
    resetHubModules();
 });
 
+describe('ArchidektExport.parseImportLine', () => {
+   it('round-trips a simple import line', () => {
+      const line = ArchidektExport.formatImportLine(1, 'Sol Ring', 'cmm', '1', 'Ramp', null, null);
+      const card = ArchidektExport.parseImportLine(line);
+      expect(card).toMatchObject({
+         name: 'Sol Ring',
+         quantity: 1,
+         set_code: 'cmm',
+         collector_number: '1',
+         primary_category: 'Ramp',
+         categories: ['Ramp'],
+      });
+   });
+
+   it('round-trips foil and multi-category lines', () => {
+      const line = ArchidektExport.formatImportLine(2, 'Sol Ring', 'cmm', '1', 'Ramp', null, 'foil');
+      const card = ArchidektExport.parseImportLine(line);
+      expect(card.finish).toBe('foil');
+      expect(card.quantity).toBe(2);
+
+      const landLine = ArchidektExport.formatImportLine(
+         1, 'Forest', 'xyz', '1', ['Land', 'Proxies'], { Proxies: { includedInPrice: false } }, null
+      );
+      const land = ArchidektExport.parseImportLine(landLine);
+      expect(land.categories).toEqual(['Land', 'Proxies']);
+   });
+
+   it('skips blank lines and comments', () => {
+      const cards = ArchidektExport.parseImportText('# header\n\n1x Sol Ring (cmm) 1 [Ramp]\n');
+      expect(cards).toHaveLength(1);
+      expect(cards[0].name).toBe('Sol Ring');
+   });
+});
+
 describe('ArchidektExport.formatImportLine', () => {
    it('formats quantity, name, set, and collector number', () => {
       expect(ArchidektExport.formatImportLine(1, 'Sol Ring', 'cmm', '1', 'Ramp', null, null))

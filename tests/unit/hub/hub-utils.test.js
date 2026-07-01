@@ -91,6 +91,21 @@ describe('HubUtils.ensureCss', () => {
    });
 });
 
+describe('HubUtils.mountAppProgress', () => {
+   it('returns null when host is missing', () => {
+      loadHubModule('shared/hub-progress.js', 'HubProgress');
+      expect(HubUtils.mountAppProgress(null, 'test-app')).toBeNull();
+   });
+
+   it('mounts HubProgress when host and module exist', () => {
+      loadHubModule('shared/hub-progress.js', 'HubProgress');
+      document.body.innerHTML = '<div id="host"></div>';
+      const controller = HubUtils.mountAppProgress(document.getElementById('host'), 'test-app');
+      expect(controller).toBeTruthy();
+      expect(document.querySelector('.hub-progress-bar')).toBeTruthy();
+   });
+});
+
 describe('hub apps no longer redefine shared helpers', () => {
    it('order-reconcile.js delegates to HubUtils', () => {
       const src = readHubFile('apps/order-reconcile/order-reconcile.js');

@@ -1,0 +1,47 @@
+---
+description: Hub app headers must be sticky by default (sticky chrome under scroll)
+globs: rayenz-hub/apps/**/*.{js,css,html},rayenz-hub/shared/**/*.{js,css}
+alwaysApply: false
+---
+
+# Sticky app header (default)
+
+Hub apps keep the **title/actions header pinned** while body content scrolls.
+
+## Default pattern
+
+1. Wrap the app header and the progress host in `.hub-sticky-chrome` (see `rayenz-hub/shared/hub-app-chrome.css`).
+2. Header element uses the app class (`.ds-header`, `.dr-header`, `.or-header`, `.site-header`).
+3. Scrollable content lives **below** the sticky chrome (e.g. `.ds-body`, `.dr-body`, `.or-body`, dailies collapsibles).
+4. New apps must use this wrapper unless added to **Documented overrides** first.
+
+```html
+<div class="hub-sticky-chrome">
+   <header class="ds-header">…</header>
+   <div class="hub-progress-host" id="ds-progress-host"></div>
+</div>
+<div class="ds-body">…</div>
+```
+
+Do **not** use `position: fixed` for app headers unless listed under **Documented overrides**.
+
+## Overrides
+
+To skip `.hub-sticky-chrome` or use a non-sticky header (full-bleed layout, embedded iframe, etc.):
+
+1. Add a row under **Documented overrides** below **in the same change** as the code.
+2. Use the standard row format. Unlisted deviations are not allowed.
+
+Row format:
+
+`- **{App}** — \`{file or symbol}\` — {what uses non-default pattern} — {why} (added: YYYY-MM-DD)`
+
+## Documented overrides
+
+_(none)_
+
+## Enforcement
+
+- New Hub apps must use `.hub-sticky-chrome` unless listed above.
+- New override: edit this `.mdc` file in the same PR; do not add silent exceptions in code only.
+- When reviewing diffs under `apps/**`, check header layout against **Documented overrides**.
