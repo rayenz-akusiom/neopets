@@ -1,0 +1,85 @@
+{
+  "deck_id": "baird",
+  "deck_name": "Baird",
+  "archidekt_url": "https://archidekt.com/decks/3533613",
+  "format": "commander",
+  "deck_snapshot": {
+    "fetched_at": "2026-06-22",
+    "cards": [
+      {
+        "name": "Plains",
+        "quantity": 1,
+        "set_code": "dmu",
+        "collector_number": "277",
+        "primary_category": "New Set Out",
+        "categories": ["New Set Out"]
+      },
+      {
+        "name": "Sacred Foundry",
+        "quantity": 1,
+        "set_code": "dom",
+        "collector_number": "254",
+        "primary_category": "Land",
+        "categories": ["Land"]
+      },
+      {
+        "name": "Endless Foot Assault",
+        "quantity": 1,
+        "set_code": "dsk",
+        "collector_number": "127",
+        "primary_category": "Anthems",
+        "categories": ["Anthems"]
+      },
+      {
+        "name": "Turbulent Steppe",
+        "quantity": 1,
+        "set_code": "dft",
+        "collector_number": "266",
+        "primary_category": "Land",
+        "categories": ["Land"]
+      },
+      {
+        "name": "Baird, Argivian Recruiter",
+        "quantity": 1,
+        "set_code": "dmu",
+        "collector_number": "294",
+        "primary_category": "Commander",
+        "categories": ["Commander"]
+      },
+      {
+        "name": "Caretaker's Talent",
+        "quantity": 1,
+        "set_code": "blb",
+        "collector_number": "6",
+        "primary_category": "New Set In",
+        "categories": ["New Set In"]
+      },
+      {
+        "name": "Sunbillow Verge",
+        "quantity": 1,
+        "set_code": "dft",
+        "collector_number": "264",
+        "primary_category": "New Set In",
+        "categories": ["New Set In"]
+      }
+    ]
+  },
+  "profile": {
+    "deck_id": "baird",
+    "format": "commander",
+    "roles": [
+      {
+        "id": "protection",
+        "priority": "high",
+        "tags": ["protection", "instant", "commander-protection"]
+      },
+      {
+        "id": "token",
+        "priority": "medium",
+        "tags": ["token"]
+      }
+    ],
+    "protected_cards": [],
+    "blocked_cards": []
+  }
+}

@@ -5,6 +5,7 @@ let DR;
 
 const FILES = [
    'shared/hub-utils.js',
+   'shared/swap-queue.js',
    'apps/deck-review/archidekt-export.js',
    'apps/deck-review/profile-sync.js',
    'apps/deck-review/deck-review.js',
@@ -124,6 +125,25 @@ describe('DeckReview.decisionStatusLabel / isMissingSuggestedCut', () => {
       expect(DR.isMissingSuggestedCut({ action: 'replace', replaces: [] })).toBe(true);
       expect(DR.isMissingSuggestedCut({ action: 'replace', replaces: [{ name: 'X' }] })).toBe(false);
       expect(DR.isMissingSuggestedCut({ action: 'sideboard', replaces: [] })).toBe(false);
+   });
+});
+
+describe('DeckReview.validateSuggestions', () => {
+   it('normalizes string roles_matched to an array', () => {
+      const data = {
+         meta: { schema_version: '1.1' },
+         decks: [{
+            deck_id: 'd1',
+            suggestions: [{
+               suggestion_id: 's1',
+               roles_matched: 'swap',
+               replaces: { name: 'Old Card' },
+            }],
+         }],
+      };
+      const validated = DR.validateSuggestions(data);
+      expect(validated.decks[0].suggestions[0].roles_matched).toEqual(['swap']);
+      expect(Array.isArray(validated.decks[0].suggestions[0].replaces)).toBe(true);
    });
 });
 

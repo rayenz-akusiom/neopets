@@ -25,6 +25,8 @@ const MODULE_GLOBALS = [
    'ProfileSync',
    'OrderReconcile',
    'DeckReview',
+   'DeckSuggest',
+   'SwapQueue',
 ];
 
 // Loads one or more hub IIFE files (in dependency order) into the happy-dom

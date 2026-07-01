@@ -1,0 +1,24 @@
+{
+  "primaryCode": "MH2",
+  "codes": ["MH2"],
+  "setName": "Modern Horizons 2",
+  "cards": [
+    {
+      "name": "Arid Mesa",
+      "set_code": "MH2",
+      "collector_number": "244",
+      "cmc": 0,
+      "type_line": "Land"
+    },
+    {
+      "name": "Solitude",
+      "set_code": "MH2",
+      "collector_number": "32",
+      "cmc": 5,
+      "type_line": "Creature — Elemental Incarnation",
+      "oracle_text": "Flash. Lifelink."
+    }
+  ],
+  "fetchedAt": "2026-06-30",
+  "source": "fixture"
+}

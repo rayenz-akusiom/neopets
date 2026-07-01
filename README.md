@@ -6,7 +6,7 @@ Monorepo for [Rayenz Hub](https://rayenz-akusiom.github.io/rayenz-akusiom/) (Dai
 
 | Path | Purpose |
 |------|---------|
-| `rayenz-hub/` | Hub source (dev/staging): Dailies, Deck Review, Order Reconcile |
+| `rayenz-hub/` | Hub source (dev/staging): Dailies, Deck Review, Deck Suggest, Order Reconcile |
 | `monkey-scripts/` | Neopets userscripts — edit and push here |
 | `tests/` | Hub test harness (Vitest + Playwright) |
 

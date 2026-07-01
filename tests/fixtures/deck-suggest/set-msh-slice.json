@@ -1,0 +1,47 @@
+{
+  "primaryCode": "MSH",
+  "codes": ["MSH", "MSC", "MAR"],
+  "setName": "Marvel Super Heroes",
+  "cards": [
+    {
+      "name": "Take Up the Shield",
+      "set_code": "MSH",
+      "collector_number": "39",
+      "scryfall_id": "5199d708-8b11-461d-9e91-3e8cd70906f7",
+      "scryfall_uri": "https://scryfall.com/card/msh/39/take-up-the-shield",
+      "mana_cost": "{1}{W}",
+      "cmc": 2,
+      "type_line": "Instant",
+      "oracle_text": "Target creature gets +2/+2 and indestructible until end of turn."
+    },
+    {
+      "name": "Thor, God of Thunder",
+      "set_code": "MSH",
+      "collector_number": "156",
+      "scryfall_id": "cddd314c-c271-475a-b076-01a8599c8015",
+      "scryfall_uri": "https://scryfall.com/card/msh/156/thor-god-of-thunder",
+      "mana_cost": "{3}{R}{R}",
+      "cmc": 5,
+      "type_line": "Legendary Creature — God Warrior Hero",
+      "oracle_text": ""
+    },
+    {
+      "name": "Caretaker's Talent",
+      "set_code": "BLB",
+      "collector_number": "6",
+      "scryfall_id": "ad5ea98a-e36e-4ab9-b4da-cc572f3777db",
+      "mana_cost": "{2}{W}",
+      "cmc": 3,
+      "type_line": "Enchantment — Class"
+    },
+    {
+      "name": "Sunbillow Verge",
+      "set_code": "DFT",
+      "collector_number": "264",
+      "cmc": 0,
+      "type_line": "Land"
+    }
+  ],
+  "fetchedAt": "2026-06-30",
+  "source": "fixture"
+}

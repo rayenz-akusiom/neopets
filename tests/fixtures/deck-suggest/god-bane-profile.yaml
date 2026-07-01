@@ -1,0 +1,14 @@
+deck_id: god-bane
+name: God Bane
+format: commander
+roles:
+  - id: finisher
+    priority: high
+    tags: [god, creature]
+  - id: synergy
+    priority: medium
+    tags: [god, token]
+protected_cards:
+  - Taurean Mauler
+blocked_cards:
+  - Door of Destinies
